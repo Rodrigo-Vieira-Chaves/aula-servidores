@@ -22,7 +22,11 @@ app.get('/api/pessoas', async (req, res) => {
     res.json({ servidor: SERVIDOR, total: rows.length, dados: rows });
   } catch (erro) {
     console.error(erro.message);
-    res.status(500).json({ servidor: SERVIDOR, erro: 'falha ao consultar o banco' });
+    res.status(500).json({
+      servidor: SERVIDOR,
+      erro: 'falha ao consultar o banco',
+      motivo: erro.message
+    });
   }
 });
 
