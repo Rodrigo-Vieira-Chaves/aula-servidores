@@ -8,6 +8,8 @@ RUN npm ci --omit=dev
 COPY backend/ ./
 COPY frontend/ ../frontend/
 
+RUN chmod +x entrypoint.sh
+
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["./entrypoint.sh"]

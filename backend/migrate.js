@@ -20,28 +20,45 @@ const NOMES = [
   'Zilda Ferreira Nunes', 'Arthur Benicio Pimentel'
 ];
 
-async function migrate() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS pessoas (
-      id SERIAL PRIMARY KEY,
-      nome TEXT NOT NULL
-    )
-  `);
-  console.log('tabela pessoas pronta');
-
-  const { rows } = await pool.query('SELECT COUNT(*)::int AS total FROM pessoas');
-  if (rows[0].total > 0) {
-    console.log(`ja existem ${rows[0].total} registros, seed ignorado`);
-    await pool.end();
-    return;
+async function esperarBanco(tentativas = 10, intervaloMs = 3000) {
+  for (let tentativa = 1; tentativa <= tentativas; tentativa++) {
+    try {
+      await pool.query('SELECT 1');
+      return;
+    } catch (erro) {
+      console.log(`banco indisponivel (${erro.message}) — tentativa ${tentativa}/${tentativas}`);
+      if (tentativa === tentativas) throw erro;
+      await new Promise((resolve) => setTimeout(resolve, intervaloMs));
+    }
   }
+}
 
-  await pool.query(
-    'INSERT INTO pessoas (nome) SELECT unnest($1::text[])',
-    [NOMES]
-  );
-  console.log(`${NOMES.length} nomes inseridos`);
-  await pool.end();
+async function migrate() {
+  await esperarBanco();
+
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS pessoas (
+        id SERIAL PRIMARY KEY,
+        nome TEXT NOT NULL
+      )
+    `);
+    console.log('tabela pessoas pronta');
+
+    const { rows } = await pool.query('SELECT COUNT(*)::int AS total FROM pessoas');
+    if (rows[0].total > 0) {
+      console.log(`ja existem ${rows[0].total} registros, seed ignorado`);
+      return;
+    }
+
+    await pool.query(
+      'INSERT INTO pessoas (nome) SELECT unnest($1::text[])',
+      [NOMES]
+    );
+    console.log(`${NOMES.length} nomes inseridos`);
+  } finally {
+    await pool.end();
+  }
 }
 
 migrate().catch((erro) => {
