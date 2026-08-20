@@ -46,6 +46,12 @@
     }
     li:nth-child(odd) { background: #172033; }
     .vazio { color: #64748b; padding: 1rem; }
+    .erro {
+      color: #fca5a5;
+      background: #3f1d1d;
+      border-radius: 8px;
+      border-bottom: none;
+    }
   </style>
 </head>
 <body>
@@ -67,9 +73,30 @@
 
     let timer;
 
+    function mostrarErro(texto) {
+      servidor.textContent = '—';
+      contagem.textContent = '';
+      lista.innerHTML = '<li class="erro"></li>';
+      lista.firstChild.textContent = texto;
+    }
+
     async function buscar() {
       const inicio = performance.now();
-      const resposta = await fetch('/api/pessoas?busca=' + encodeURIComponent(campo.value));
+
+      let resposta;
+      try {
+        resposta = await fetch('/api/pessoas?busca=' + encodeURIComponent(campo.value));
+      } catch (falha) {
+        mostrarErro('Não foi possível falar com o servidor: ' + falha.message);
+        return;
+      }
+
+      if (!resposta.ok) {
+        mostrarErro(`O servidor respondeu ${resposta.status} ${resposta.statusText}. ` +
+          (resposta.status >= 502 ? 'O proxy não conseguiu falar com o backend.' : ''));
+        return;
+      }
+
       const json = await resposta.json();
       const ms = Math.round(performance.now() - inicio);
 
