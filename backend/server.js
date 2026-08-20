@@ -31,7 +31,12 @@ app.get('/api/health', async (req, res) => {
     await pool.query('SELECT 1');
     res.json({ servidor: SERVIDOR, banco: 'ok' });
   } catch (erro) {
-    res.status(503).json({ servidor: SERVIDOR, banco: 'indisponivel' });
+    res.status(503).json({
+      servidor: SERVIDOR,
+      banco: 'indisponivel',
+      motivo: erro.message,
+      alvo: `${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 5432}`
+    });
   }
 });
 
