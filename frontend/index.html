@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Busca de Nomes</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 2rem 1rem;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+    main { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin: 0 0 1.5rem; }
+    input {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      font-size: 1.1rem;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+    input:focus { outline: 2px solid #38bdf8; border-color: transparent; }
+    #meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+    #servidor {
+      font-weight: 700;
+      color: #fbbf24;
+      font-family: ui-monospace, monospace;
+    }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #1e293b;
+      font-size: 1.05rem;
+    }
+    li:nth-child(odd) { background: #172033; }
+    .vazio { color: #64748b; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Busca de Nomes</h1>
+    <input id="busca" type="search" placeholder="Digite parte de um nome..." autocomplete="off" autofocus>
+    <div id="meta">
+      <span id="contagem"></span>
+      <span>respondido por <span id="servidor">—</span></span>
+    </div>
+    <ul id="resultado"></ul>
+  </main>
+
+  <script>
+    const campo = document.getElementById('busca');
+    const lista = document.getElementById('resultado');
+    const contagem = document.getElementById('contagem');
+    const servidor = document.getElementById('servidor');
+
+    let timer;
+
+    async function buscar() {
+      const inicio = performance.now();
+      const resposta = await fetch('/api/pessoas?busca=' + encodeURIComponent(campo.value));
+      const json = await resposta.json();
+      const ms = Math.round(performance.now() - inicio);
+
+      servidor.textContent = json.servidor;
+      contagem.textContent = `${json.total} resultado(s) em ${ms} ms`;
+
+      lista.innerHTML = '';
+      if (json.dados.length === 0) {
+        lista.innerHTML = '<li class="vazio">Nenhum nome encontrado.</li>';
+        return;
+      }
+      for (const pessoa of json.dados) {
+        const item = document.createElement('li');
+        item.textContent = pessoa.nome;
+        lista.appendChild(item);
+      }
+    }
+
+    campo.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(buscar, 250);
+    });
+
+    buscar();
+  </script>
+</body>
+</html>
