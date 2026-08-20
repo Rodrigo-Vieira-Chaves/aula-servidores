@@ -1,0 +1,16 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      BACKEND1: "${BACKEND1:?defina BACKEND1 no .env, no formato IP:3000}"
+      BACKEND2: "${BACKEND2:-${BACKEND1}}"
+      NGINX_ENVSUBST_FILTER: BACKEND
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

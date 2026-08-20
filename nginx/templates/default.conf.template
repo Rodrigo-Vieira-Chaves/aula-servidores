@@ -1,0 +1,30 @@
+upstream backends {
+    zone backends 64k;
+
+    server ${BACKEND1} max_fails=1 fail_timeout=5s;
+    server ${BACKEND2} max_fails=1 fail_timeout=5s;
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /api/ {
+        proxy_pass http://backends;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        proxy_connect_timeout 2s;
+        proxy_next_upstream error timeout http_502 http_503 http_504;
+
+        add_header X-Backend $upstream_addr always;
+    }
+}

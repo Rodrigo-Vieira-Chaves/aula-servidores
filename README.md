@@ -57,6 +57,31 @@ no frontend — use `Server1` e `Server2` para que a alternância fique óbvia n
 A migration só precisa rodar uma vez, a partir de qualquer um dos backends: o banco é
 compartilhado. Rodar de novo é seguro, o seed é ignorado se a tabela já tiver dados.
 
+## Servidor de frontend (Nginx)
+
+Na instância do frontend, clone o repositório e crie o `.env`:
+
+```bash
+cat > .env <<'EOF'
+BACKEND1=172.31.1.179:3000
+BACKEND2=172.31.x.x:3000
+EOF
+
+docker compose -f compose.frontend.yaml up -d
+```
+
+Use os **IPs privados** dos backends. Se ainda houver só um backend, omita `BACKEND2` que
+ele assume o mesmo valor de `BACKEND1`.
+
+O Nginx serve os arquivos de `frontend/` e faz proxy de `/api/` para os backends em
+round-robin. A resposta traz o header `X-Backend` com o endereço de quem respondeu.
+
+Para recarregar a configuração após editar o template:
+
+```bash
+docker compose -f compose.frontend.yaml up -d --force-recreate
+```
+
 ## Variáveis de ambiente
 
 | Variável | Padrão | Para que serve |
