@@ -18,11 +18,15 @@ Internet
 
 ## O que é
 
-- **Backend** — Node + Express, um endpoint de busca de nomes. A resposta inclui o campo
+- **Backend** — Node + Express, busca de nomes protegida por login. A resposta inclui o campo
   `servidor`, que identifica qual máquina respondeu (é o que torna o load balancing visível).
-- **Frontend** — HTML estático com um campo de busca. Chama `/api/pessoas` em caminho relativo,
-  então funciona tanto servido pelo backend (dev) quanto pelo Nginx (produção), sem CORS.
-- **Banco** — PostgreSQL 18 com uma tabela `pessoas`.
+- **Frontend** — HTML estático com tela de login e um campo de busca. Chama a API em caminho
+  relativo por padrão, então funciona tanto servido pelo backend (dev) quanto pelo Nginx.
+- **Banco** — PostgreSQL 18 com as tabelas `pessoas` e `usuarios`.
+
+A sessão é um **JWT dentro de um cookie HttpOnly**. Como o token é assinado e não guardado em
+lugar nenhum, qualquer um dos backends valida a sessão dos outros — desde que todos usem o
+**mesmo `JWT_SEGREDO`**. É o que mantém o backend descartável mesmo com login.
 
 ## Rodando local
 
@@ -46,6 +50,7 @@ DB_PASSWORD=aula123 \
 DB_USER=app \
 DB_NAME=aula \
 NOME_SERVIDOR=Server1 \
+JWT_SEGREDO=troque-isso-e-repita-igual-no-server2 \
 docker compose up -d --build
 
 docker compose exec backend node migrate.js
@@ -82,6 +87,23 @@ Para recarregar a configuração após editar o template:
 docker compose -f compose.frontend.yaml up -d --force-recreate
 ```
 
+## Domínio, HTTPS e CORS
+
+Com o domínio apontado no Cloudflare, o navegador acessa a aplicação por HTTPS. Duas coisas
+mudam em relação ao setup só com IP:
+
+- **CORS** — se o frontend e a API ficarem em origens diferentes (por exemplo
+  `rodrigovieirachaves.com` e `api.rodrigovieirachaves.com`), o backend precisa autorizar a
+  origem do frontend em `ORIGENS_PERMITIDAS`. Se tudo passa pelo mesmo Nginx em caminho
+  relativo, CORS nem aparece.
+- **Cookie** — em HTTPS o cookie vai com `Secure`, e o frontend precisa mandar
+  `credentials: 'include'` no `fetch`. Com `credentials`, o navegador **recusa**
+  `Access-Control-Allow-Origin: *`: a origem tem que vir escrita por extenso.
+
+`SameSite=Lax` (o padrão) já basta quando front e API estão no mesmo domínio ou em subdomínios
+dele. Só use `COOKIE_SAMESITE=None` se forem domínios realmente diferentes — e nesse caso
+`Secure` é obrigatório.
+
 ## Variáveis de ambiente
 
 | Variável | Padrão | Para que serve |
@@ -93,8 +115,22 @@ docker compose -f compose.frontend.yaml up -d --force-recreate
 | `DB_NAME` | `aula` | banco |
 | `NOME_SERVIDOR` | hostname do container | rótulo exibido no frontend |
 | `PORT` | `3000` | porta do backend |
+| `ORIGENS_PERMITIDAS` | domínio da aula | origens liberadas no CORS, separadas por vírgula |
+| `JWT_SEGREDO` | segredo de aula | chave que assina a sessão — **igual nos dois backends** |
+| `JWT_VALIDADE_SEGUNDOS` | `28800` | validade da sessão (8 h) |
+| `COOKIE_SEGURO` | `true` | `Secure` no cookie; use `false` só em HTTP local |
+| `COOKIE_SAMESITE` | `lax` | `lax`, `strict` ou `none` |
+| `COOKIE_DOMINIO` | vazio | `Domain` do cookie, para compartilhar entre subdomínios |
+| `USUARIO_DEMO` | `aluno` | usuário criado pela migration |
+| `SENHA_DEMO` | `aula123` | senha desse usuário (guardada com hash bcrypt) |
 
 ## Endpoints
 
+- `POST /api/login` — corpo `{ "usuario": "aluno", "senha": "aula123" }`; responde com o
+  cookie de sessão em `Set-Cookie`
+- `POST /api/logout` — apaga o cookie
+- `GET /api/eu` — quem está logado; é como o frontend descobre se há sessão, já que o
+  cookie é `HttpOnly` e o JavaScript não consegue lê-lo
 - `GET /api/pessoas?busca=ana` — busca por trecho do nome, limite de 50 resultados
+  (**exige login**)
 - `GET /api/health` — verifica a conexão com o banco

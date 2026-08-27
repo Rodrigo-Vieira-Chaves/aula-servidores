@@ -14,6 +14,14 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       DB_NAME: ${DB_NAME:-aula}
       NOME_SERVIDOR: ${NOME_SERVIDOR:-}
+      ORIGENS_PERMITIDAS: ${ORIGENS_PERMITIDAS:-}
+      # Precisa ser IDENTICO nos dois backends: e a chave que assina a sessao.
+      JWT_SEGREDO: ${JWT_SEGREDO:-}
+      COOKIE_SEGURO: ${COOKIE_SEGURO:-true}
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-Lax}
+      COOKIE_DOMINIO: ${COOKIE_DOMINIO:-}
+      USUARIO_DEMO: ${USUARIO_DEMO:-aluno}
+      SENHA_DEMO: ${SENHA_DEMO:-aula123}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:

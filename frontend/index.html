@@ -15,6 +15,7 @@
     }
     main { max-width: 640px; margin: 0 auto; }
     h1 { font-size: 1.5rem; margin: 0 0 1.5rem; }
+    [hidden] { display: none !important; }
     input {
       width: 100%;
       padding: 0.9rem 1rem;
@@ -25,6 +26,51 @@
       color: #e2e8f0;
     }
     input:focus { outline: 2px solid #38bdf8; border-color: transparent; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-bottom: 0.35rem;
+    }
+    .campo { margin-bottom: 1rem; }
+    button {
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      background: #38bdf8;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    button:hover { background: #7dd3fc; }
+    button:disabled { opacity: 0.6; cursor: progress; }
+    #login {
+      max-width: 380px;
+      margin: 3rem auto 0;
+      padding: 1.75rem;
+      background: #172033;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+    }
+    #login h1 { font-size: 1.25rem; }
+    #login button { width: 100%; }
+    #topo {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    #topo h1 { margin: 0; }
+    #sair {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 0.5rem 0.9rem;
+      font-size: 0.85rem;
+    }
+    #sair:hover { background: #1e293b; color: #e2e8f0; }
     #meta {
       display: flex;
       justify-content: space-between;
@@ -52,26 +98,86 @@
       border-radius: 8px;
       border-bottom: none;
     }
+    #erro-login {
+      color: #fca5a5;
+      font-size: 0.9rem;
+      margin: 0 0 1rem;
+      min-height: 1.2em;
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Busca de Nomes</h1>
-    <input id="busca" type="search" placeholder="Digite parte de um nome..." autocomplete="off" autofocus>
-    <div id="meta">
-      <span id="contagem"></span>
-      <span>respondido por <span id="servidor">—</span></span>
-    </div>
-    <ul id="resultado"></ul>
+    <!-- Tela de login -->
+    <section id="login" hidden>
+      <h1>Entrar</h1>
+      <form id="form-login">
+        <div class="campo">
+          <label for="usuario">Usuário</label>
+          <input id="usuario" name="usuario" autocomplete="username" autofocus required>
+        </div>
+        <div class="campo">
+          <label for="senha">Senha</label>
+          <input id="senha" name="senha" type="password" autocomplete="current-password" required>
+        </div>
+        <p id="erro-login"></p>
+        <button type="submit" id="botao-entrar">Entrar</button>
+      </form>
+    </section>
+
+    <!-- App, só aparece com sessão válida -->
+    <section id="app" hidden>
+      <div id="topo">
+        <h1>Busca de Nomes</h1>
+        <button id="sair" type="button">Sair (<span id="quem"></span>)</button>
+      </div>
+      <input id="busca" type="search" placeholder="Digite parte de um nome..." autocomplete="off">
+      <div id="meta">
+        <span id="contagem"></span>
+        <span>respondido por <span id="servidor">—</span></span>
+      </div>
+      <ul id="resultado"></ul>
+    </section>
   </main>
 
   <script>
+    // Vazio = mesma origem (o Nginx faz o proxy de /api).
+    // Se a API estiver em outro domínio, coloque aqui a URL completa —
+    // é a partir daí que o CORS entra em cena.
+    const API = '';
+
+    const telaLogin = document.getElementById('login');
+    const telaApp = document.getElementById('app');
+    const formLogin = document.getElementById('form-login');
+    const botaoEntrar = document.getElementById('botao-entrar');
+    const erroLogin = document.getElementById('erro-login');
+    const quem = document.getElementById('quem');
     const campo = document.getElementById('busca');
     const lista = document.getElementById('resultado');
     const contagem = document.getElementById('contagem');
     const servidor = document.getElementById('servidor');
 
     let timer;
+
+    // credentials: 'include' é o que manda o cookie junto.
+    // Sem isso o navegador não envia cookie nenhum para outra origem.
+    function chamar(caminho, opcoes = {}) {
+      return fetch(API + caminho, { credentials: 'include', ...opcoes });
+    }
+
+    function mostrarLogin() {
+      telaApp.hidden = true;
+      telaLogin.hidden = false;
+      document.getElementById('usuario').focus();
+    }
+
+    function mostrarApp(usuario) {
+      telaLogin.hidden = true;
+      telaApp.hidden = false;
+      quem.textContent = usuario;
+      campo.focus();
+      buscar();
+    }
 
     function mostrarErro(texto) {
       servidor.textContent = '—';
@@ -85,9 +191,15 @@
 
       let resposta;
       try {
-        resposta = await fetch('/api/pessoas?busca=' + encodeURIComponent(campo.value));
+        resposta = await chamar('/api/pessoas?busca=' + encodeURIComponent(campo.value));
       } catch (falha) {
         mostrarErro('Não foi possível falar com o servidor: ' + falha.message);
+        return;
+      }
+
+      // Cookie expirado ou apagado: a sessão acabou, volta para o login.
+      if (resposta.status === 401) {
+        mostrarLogin();
         return;
       }
 
@@ -115,12 +227,60 @@
       }
     }
 
+    formLogin.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      erroLogin.textContent = '';
+      botaoEntrar.disabled = true;
+
+      try {
+        const resposta = await chamar('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            usuario: document.getElementById('usuario').value,
+            senha: document.getElementById('senha').value
+          })
+        });
+
+        const json = await resposta.json().catch(() => ({}));
+
+        if (!resposta.ok) {
+          erroLogin.textContent = json.erro || `Erro ${resposta.status}`;
+          return;
+        }
+
+        document.getElementById('senha').value = '';
+        mostrarApp(json.usuario);
+      } catch (falha) {
+        erroLogin.textContent = 'Não foi possível falar com o servidor: ' + falha.message;
+      } finally {
+        botaoEntrar.disabled = false;
+      }
+    });
+
+    document.getElementById('sair').addEventListener('click', async () => {
+      await chamar('/api/logout', { method: 'POST' }).catch(() => {});
+      mostrarLogin();
+    });
+
     campo.addEventListener('input', () => {
       clearTimeout(timer);
       timer = setTimeout(buscar, 250);
     });
 
-    buscar();
+    // Ao abrir a página o JS não consegue ler o cookie (ele é HttpOnly).
+    // A única forma de saber se há sessão é perguntar ao servidor.
+    (async function iniciar() {
+      try {
+        const resposta = await chamar('/api/eu');
+        if (resposta.ok) {
+          const json = await resposta.json();
+          mostrarApp(json.usuario);
+          return;
+        }
+      } catch { /* servidor fora do ar: cai no login */ }
+      mostrarLogin();
+    })();
   </script>
 </body>
 </html>
