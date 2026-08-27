@@ -70,9 +70,10 @@ Na instância do frontend, clone o repositório e crie o `.env`:
 cat > .env <<'EOF'
 BACKEND1=172.31.1.179:3000
 BACKEND2=172.31.x.x:3000
+DOMINIO=rodrigovieirachaves.com
 EOF
 
-docker compose -f compose.frontend.yaml up -d
+docker compose -f compose.frontend.yaml up -d --build
 ```
 
 Use os **IPs privados** dos backends. Se ainda houver só um backend, omita `BACKEND2` que
@@ -80,6 +81,28 @@ ele assume o mesmo valor de `BACKEND1`.
 
 O Nginx serve os arquivos de `frontend/` e faz proxy de `/api/` para os backends em
 round-robin. A resposta traz o header `X-Backend` com o endereço de quem respondeu.
+
+### TLS na origem
+
+O Nginx escuta em **80 e 443**. Isso é obrigatório quando o Cloudflare está em modo
+**Full** ou **Full (strict)**: nesses modos ele conecta na 443 da origem, e sem ninguém
+escutando lá a resposta é **erro 521**.
+
+Na primeira subida, o container **gera um certificado autoassinado** em `nginx/certs/` —
+suficiente para o modo `Full`, que exige TLS mas não valida quem assinou. O certificado
+fica salvo e é reaproveitado nos restarts seguintes.
+
+Para subir de `Full` para `Full (strict)`, gere um **Origin Certificate** no painel do
+Cloudflare (SSL/TLS → Origin Server) e salve os dois arquivos por cima:
+
+```bash
+nginx/certs/origin.crt
+nginx/certs/origin.key
+
+docker compose -f compose.frontend.yaml restart
+```
+
+O script detecta que já existe certificado e usa o seu, sem gerar nada.
 
 Para recarregar a configuração após editar o template:
 
