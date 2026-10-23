@@ -141,6 +141,11 @@ h1, h2, h3 { line-height: 1.2; margin: 0; }
 .saude.ok::before { background: var(--ok); }
 .saude.falha { color: var(--erro); border-color: var(--erro); }
 .saude.falha::before { background: var(--erro); }
+.link-sistema {
+	font-size: 0.85rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+	padding: 5px 12px; border-radius: 8px; background: var(--accent); color: #fff;
+}
+.link-sistema:hover { filter: brightness(1.08); }
 .icone {
 	border: 1px solid var(--border); background: var(--surface); color: var(--text);
 	width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 1rem; flex: none;
@@ -457,6 +462,7 @@ details.ver-sql[open] summary { margin-bottom: 10px; }
 		<span>Modelagem de dados com PostgreSQL</span>
 	</div>
 	<div class="topo-dir">
+		<a class="link-sistema" href="/atendimento/" title="O sistema em uso, como um atendente vê">Abrir o sistema ↗</a>
 		<span id="saude" class="saude" title="Conexão do backend com o banco">verificando o banco…</span>
 		<button id="btn-tema" class="icone" title="Alternar tema claro/escuro" aria-label="Alternar tema"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor"/></svg></button>
 	</div>
@@ -1539,15 +1545,17 @@ async function paginaConstraints(corpo) {
  * Pagina: Prisma
  * ===================================================================== */
 const CODIGO_ORM = `// src/api/rest/tickets/tickets.repository.ts
+const COM_RELACOES = {
+  cliente: true,                    // 1:N
+  atendente: true,                  // 1:N opcional
+  avaliacao: true,                  // 1:1
+  tags: { include: { tag: true } }, // N:M
+};
+
 findById(id: number) {
   return this.databaseService.ticket.findUnique({
     where: { id },
-    include: {
-      cliente: true,                    // 1:N
-      atendente: true,                  // 1:N opcional
-      avaliacao: true,                  // 1:1
-      tags: { include: { tag: true } }, // N:M
-    },
+    include: COM_RELACOES,
   });
 }`;
 

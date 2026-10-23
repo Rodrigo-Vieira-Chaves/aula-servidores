@@ -305,6 +305,11 @@ migrations já rodaram neste banco. Quem criou as tabelas foi a migration, não 
 Acesse `http://IP-PUBLICO:3000` e passe o endereço para a turma. O selo verde no topo mostra
 **PostgreSQL 18.x · banco:5432**: é o backend dizendo em que banco está conectado.
 
+O botão **Abrir o sistema**, no topo, leva para `/atendimento/`: a tela de um atendente usando o
+sistema (fila, assumir, fechar, avaliar, abrir ticket). É um bom jeito de mostrar, logo no começo,
+o sistema que vai ser modelado. Mexer nos dados ali muda as contagens das consultas, então rode
+`docker compose exec backend npm run seed:reset` antes das telas de consulta.
+
 Se não abrir:
 
 - `docker compose ps`: os containers estão `Up`, com o `banco` e o `backend` em `(healthy)`?
@@ -396,7 +401,8 @@ Para cada experimento, **pergunte antes de clicar**: "o banco vai aceitar?".
 Tudo roda numa transação com ROLLBACK, então pode clicar à vontade: os dados da aula não mudam.
 
 Bom ponto para discutir: "só pode avaliar ticket FECHADO" **não** cabe num CHECK, porque o CHECK
-só enxerga a própria linha. Uma regra assim fica na aplicação (ou num trigger).
+só enxerga a própria linha. Uma regra assim fica na aplicação (ou num trigger). Neste sistema ela
+está no [tickets.service.ts](backend/src/api/rest/tickets/tickets.service.ts).
 
 ## 6. Consultas (telas 6 a 11)
 

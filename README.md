@@ -25,8 +25,14 @@ tickets 1 ──── N tickets_tags N ──── 1 tags         (N:M pela ta
 | **ON DELETE** | `RESTRICT` (clientes), `SET NULL` (atendentes), `CASCADE` (avaliações e tags) |
 | **Consultas** | `SELECT`, `INNER JOIN`, `LEFT JOIN`, `RIGHT JOIN`, `FULL OUTER JOIN`, `UNION` / `UNION ALL` |
 
-O frontend mostra cada consulta com o diagrama de Venn, as tabelas de origem coloridas (o que
-casou, o que ficou de fora) e o resultado. O roteiro da aula está em [ROTEIRO.md](ROTEIRO.md).
+O frontend tem duas partes:
+
+- **a aula** (`/`): cada consulta com o diagrama de Venn, as tabelas de origem coloridas (o que
+  casou, o que ficou de fora) e o resultado;
+- **o sistema** (`/atendimento/`): a tela de um atendente usando o sistema de verdade. Dá para ver
+  a fila, assumir, devolver e fechar tickets, registrar a avaliação do cliente e abrir tickets novos.
+
+O roteiro da aula está em [ROTEIRO.md](ROTEIRO.md).
 
 ## Stack
 
@@ -48,9 +54,11 @@ backend/
     api/rest/consultas/    <- SELECT, JOINs e UNION, em SQL puro
     api/rest/relacoes/     <- uma consulta por tipo de relação
     api/rest/constraints/  <- catálogo de constraints e os experimentos
-    api/rest/tickets/      <- o mesmo dado pelo ORM, com include
+    api/rest/tickets/      <- o sistema do atendente, pelo ORM (controller -> service -> repository)
+    api/rest/cadastros/    <- clientes, atendentes e tags para os campos da tela
     api/rest/tabelas/      <- SELECT * de cada tabela
-frontend/index.html
+frontend/index.html               <- a aula
+frontend/atendimento/index.html   <- o sistema
 compose.yaml
 ```
 
@@ -157,7 +165,7 @@ No psql: `\dt` lista as tabelas, `\d tickets` mostra colunas, índices e constra
 
 ## Endpoints
 
-Todos devolvem `{ sql, dados }`: o SQL que rodou e o resultado.
+Os da aula devolvem `{ sql, dados }`: o SQL que rodou e o resultado.
 
 - `GET /health-check`: estado da conexão com o banco (host e versão)
 - `GET /api/tabelas`: `SELECT *` de cada tabela
@@ -168,7 +176,17 @@ Todos devolvem `{ sql, dados }`: o SQL que rodou e o resultado.
 - `GET /api/constraints/experimentos`: os experimentos e o SQL de cada um
 - `POST /api/constraints/experimentos/:id`: roda um experimento **dentro de uma transação com
   ROLLBACK** e devolve como o banco reagiu. Os dados nunca mudam.
-- `GET /api/tickets/:id`: o mesmo ticket pelo Prisma (`include`), sem SQL escrito à mão
+
+Os do sistema usam o ORM e devolvem `{ data }`:
+
+- `GET /api/cadastros`: clientes, atendentes e tags
+- `GET /api/tickets` e `GET /api/tickets/:id`: tickets com cliente, atendente, avaliação e tags
+- `POST /api/tickets`: abre um ticket (`{ titulo, clienteId, tagIds }`)
+- `PATCH /api/tickets/:id/assumir` (`{ atendenteId }`), `/devolver` e `/fechar`
+- `POST /api/tickets/:id/avaliacao`: registra a nota do cliente (`{ nota, comentario }`)
+
+As regras que não cabem numa constraint ficam no `tickets.service.ts`: só atendente ativo assume,
+só fecha quem tem atendente, e só avalia ticket fechado.
 
 ## Problemas comuns
 
