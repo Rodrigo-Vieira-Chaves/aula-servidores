@@ -175,5 +175,8 @@ Todos devolvem `{ sql, dados }`: o SQL que rodou e o resultado.
   rode `docker compose down -v` (apaga os dados) e suba de novo.
 - **Porta já em uso** (`5432` ou `3000`): use `BANCO_PORTA=5433` ou `PORTA=8080` antes do
   `docker compose up`.
-- **Build travando em instância pequena**: a `t3.micro` tem 1 GB de RAM. Crie um swap antes do
-  build (os comandos estão no ROTEIRO.md) ou use uma `t3.small`.
+- **Build travando em instância pequena**: a `t3.micro` tem 1 GB de RAM. Crie 1 GB de swap antes
+  do build (os comandos estão no ROTEIRO.md) ou use uma `t3.small`.
+- **`docker compose up` diz que o container `banco` já existe**: o compose reconhece os containers
+  pelo nome do projeto (`name: aula`). Se o `banco` foi criado por outro compose ou por um
+  `docker run`, apague com `docker rm -f banco` (o volume com os dados continua lá).

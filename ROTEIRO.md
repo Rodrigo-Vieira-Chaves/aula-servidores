@@ -19,8 +19,12 @@ entre elas, e a tecla `M` esconde o menu para sobrar espaço no projetor.
 - [ ] Login no console da AWS funcionando, já na região que vai usar (ex.: São Paulo, `sa-east-1`)
 - [ ] Um terminal com `ssh` (no Windows, o PowerShell já tem)
 
-A EC2 é criada ao vivo, na parte 3. Se for reaproveitar um servidor já usado, rode
-`docker compose exec backend npm run seed:reset` para voltar os dados ao estado inicial.
+A EC2 é criada ao vivo, na parte 3. Se ela já foi criada antes:
+
+- [ ] O Security Group tem a regra da porta **3000** liberada (sem ela, a turma não abre o sistema)
+- [ ] O IP público é o mesmo de antes: **parar e iniciar a instância troca o IP** (a não ser que
+  ela tenha um Elastic IP)
+- [ ] Se o banco já tiver os dados de um teste, rode `docker compose exec backend npm run seed:reset`
 
 ---
 
@@ -93,6 +97,18 @@ navegador ──:3000──> EC2 Ubuntu ─┬─ container backend (NestJS)
 O caminho: criar a máquina, instalar o Docker, subir um Postgres 18 na mão para entender o que
 acontece, e depois subir tudo com o compose.
 
+> **Servidor preparado antes da aula?** Se a EC2 já tem o Docker instalado e o `banco` rodando
+> vazio, as partes 3.1 a 3.4 viram explicação: mostre a instância e o Security Group no console
+> e, no servidor, `docker --version`, `docker ps` e `free -h` (o swap). Execute ao vivo a partir
+> da 3.5. Nesse caso:
+>
+> - o `docker compose up -d banco` da 3.5 responde que o banco já está rodando: o compose
+>   reconhece o container pelo nome do projeto (`name: aula` no compose.yaml);
+> - para repetir o `docker run` da 3.4 ao vivo, troque para `-p 5433:5432`, porque a 5432 já
+>   está com o `banco`;
+> - o build do backend sai em segundos, porque as camadas ficaram no cache do Docker. Para
+>   mostrar o build completo, rode `docker builder prune -af` antes (leva uns 2 minutos).
+
 ### 3.1 Criar a EC2
 
 No console da AWS: **EC2 → Instances → Launch instances**.
@@ -100,7 +116,7 @@ No console da AWS: **EC2 → Instances → Launch instances**.
 | Campo | O que escolher |
 |---|---|
 | **Name** | `aula-modelagem` |
-| **Application and OS Images** | **Ubuntu** → *Ubuntu Server 24.04 LTS*, arquitetura 64-bit (x86) |
+| **Application and OS Images** | **Ubuntu** → *Ubuntu Server 24.04 LTS* ou *26.04 LTS*, arquitetura 64-bit (x86) |
 | **Instance type** | `t3.small` (2 GB de RAM). Uma `t3.micro` (1 GB) também serve, mas precisa de swap (passo 3.3) |
 | **Key pair (login)** | **Create new key pair** → nome `aula-modelagem`, tipo RSA, formato `.pem`. O download acontece uma vez só: guarde o arquivo |
 | **Network settings** | **Edit** → *Create security group* com o nome `aula-modelagem-sg` e as regras da tabela abaixo |
@@ -155,11 +171,13 @@ docker run --rm hello-world
 O `hello-world` mostra o ciclo inteiro: baixou uma **imagem** do Docker Hub, criou um
 **container** a partir dela, rodou e apagou.
 
-Só se escolheu a `t3.micro`, crie 2 GB de swap antes de qualquer build:
+Só se escolheu a `t3.micro`, crie 1 GB de swap antes de qualquer build (com ele, o build cabe
+numa máquina de 1 GB de RAM):
 
 ```bash
-sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
-free -h                                          # a linha Swap tem que mostrar 2.0Gi
+sudo fallocate -l 1G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab     # continua ativo depois de um reboot
+free -h                                          # a linha Swap tem que mostrar 1.0Gi
 ```
 
 <details>
