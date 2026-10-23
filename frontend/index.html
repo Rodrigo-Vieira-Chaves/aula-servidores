@@ -1,286 +1,1736 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Busca de Nomes</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      padding: 2rem 1rem;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-    }
-    main { max-width: 640px; margin: 0 auto; }
-    h1 { font-size: 1.5rem; margin: 0 0 1.5rem; }
-    [hidden] { display: none !important; }
-    input {
-      width: 100%;
-      padding: 0.9rem 1rem;
-      font-size: 1.1rem;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      background: #1e293b;
-      color: #e2e8f0;
-    }
-    input:focus { outline: 2px solid #38bdf8; border-color: transparent; }
-    label {
-      display: block;
-      font-size: 0.85rem;
-      color: #94a3b8;
-      margin-bottom: 0.35rem;
-    }
-    .campo { margin-bottom: 1rem; }
-    button {
-      padding: 0.8rem 1.2rem;
-      font-size: 1rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 8px;
-      background: #38bdf8;
-      color: #0f172a;
-      cursor: pointer;
-    }
-    button:hover { background: #7dd3fc; }
-    button:disabled { opacity: 0.6; cursor: progress; }
-    #login {
-      max-width: 380px;
-      margin: 3rem auto 0;
-      padding: 1.75rem;
-      background: #172033;
-      border: 1px solid #1e293b;
-      border-radius: 12px;
-    }
-    #login h1 { font-size: 1.25rem; }
-    #login button { width: 100%; }
-    #topo {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    #topo h1 { margin: 0; }
-    #sair {
-      background: transparent;
-      color: #94a3b8;
-      border: 1px solid #334155;
-      padding: 0.5rem 0.9rem;
-      font-size: 0.85rem;
-    }
-    #sair:hover { background: #1e293b; color: #e2e8f0; }
-    #meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      margin: 1rem 0;
-      font-size: 0.9rem;
-      color: #94a3b8;
-    }
-    #servidor {
-      font-weight: 700;
-      color: #fbbf24;
-      font-family: ui-monospace, monospace;
-    }
-    ul { list-style: none; padding: 0; margin: 0; }
-    li {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #1e293b;
-      font-size: 1.05rem;
-    }
-    li:nth-child(odd) { background: #172033; }
-    .vazio { color: #64748b; padding: 1rem; }
-    .erro {
-      color: #fca5a5;
-      background: #3f1d1d;
-      border-radius: 8px;
-      border-bottom: none;
-    }
-    #erro-login {
-      color: #fca5a5;
-      font-size: 0.9rem;
-      margin: 0 0 1rem;
-      min-height: 1.2em;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Modelagem de Dados</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='16' cy='7' rx='11' ry='4' fill='%232257d6'/%3E%3Cpath d='M5 7v18c0 2.2 4.9 4 11 4s11-1.8 11-4V7c0 2.2-4.9 4-11 4S5 9.2 5 7z' fill='%232257d6' opacity='.75'/%3E%3C/svg%3E">
+<style>
+:root {
+	--bg: #f4f5f7;
+	--surface: #ffffff;
+	--surface-2: #eef0f3;
+	--text: #1a1e23;
+	--muted: #5c6571;
+	--border: #d8dde3;
+	--accent: #2257d6;
+	--cor-a: #2f6fdf;
+	--cor-b: #e0782a;
+	--cor-ab: #8a4fd6;
+	--rel-1n: #0e8a7e;
+	--rel-11: #c27c0e;
+	--rel-nm: #c2367a;
+	--pk: #b7791f;
+	--fk: #2f6fdf;
+	--uq: #15803d;
+	--ck: #c2410c;
+	--nn: #6b7280;
+	--ok: #15803d;
+	--erro: #c62828;
+	--code-bg: #f5f6f9;
+	--hl-k: #1d4ed8;
+	--hl-j: #a21caf;
+	--hl-s: #b45309;
+	--hl-c: #6b7280;
+	--hl-a: #0e7490;
+	--hl-n: #15803d;
+	--sombra: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 14px rgb(0 0 0 / 0.04);
+	--raio: 10px;
+	--mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Menlo, Consolas, monospace;
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #101317;
+		--surface: #181c22;
+		--surface-2: #222830;
+		--text: #e6e9ed;
+		--muted: #9aa3ae;
+		--border: #2e353f;
+		--accent: #7aa2ff;
+		--cor-a: #5b91f2;
+		--cor-b: #f0954f;
+		--cor-ab: #ad84f2;
+		--rel-1n: #2fc2b1;
+		--rel-11: #e8a63a;
+		--rel-nm: #ec6aa6;
+		--pk: #e0a944;
+		--fk: #6c9cf4;
+		--uq: #4ac27a;
+		--ck: #f08a52;
+		--nn: #9aa3ae;
+		--ok: #4ac27a;
+		--erro: #ff6b6b;
+		--code-bg: #13171c;
+		--hl-k: #86a8ff;
+		--hl-j: #e38bf0;
+		--hl-s: #f0b46b;
+		--hl-c: #7d8794;
+		--hl-a: #5fd0e0;
+		--hl-n: #6fd69a;
+		--sombra: 0 1px 2px rgb(0 0 0 / 0.4);
+		color-scheme: dark;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #101317;
+	--surface: #181c22;
+	--surface-2: #222830;
+	--text: #e6e9ed;
+	--muted: #9aa3ae;
+	--border: #2e353f;
+	--accent: #7aa2ff;
+	--cor-a: #5b91f2;
+	--cor-b: #f0954f;
+	--cor-ab: #ad84f2;
+	--rel-1n: #2fc2b1;
+	--rel-11: #e8a63a;
+	--rel-nm: #ec6aa6;
+	--pk: #e0a944;
+	--fk: #6c9cf4;
+	--uq: #4ac27a;
+	--ck: #f08a52;
+	--nn: #9aa3ae;
+	--ok: #4ac27a;
+	--erro: #ff6b6b;
+	--code-bg: #13171c;
+	--hl-k: #86a8ff;
+	--hl-j: #e38bf0;
+	--hl-s: #f0b46b;
+	--hl-c: #7d8794;
+	--hl-a: #5fd0e0;
+	--hl-n: #6fd69a;
+	--sombra: 0 1px 2px rgb(0 0 0 / 0.4);
+	color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { font-size: 17px; }
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); }
+code, pre { font-family: var(--mono); }
+code { font-size: 0.9em; background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 4px; }
+h1, h2, h3 { line-height: 1.2; margin: 0; }
+
+/* ---------- topo e layout ---------- */
+.topo {
+	position: sticky; top: 0; z-index: 10;
+	display: flex; align-items: center; gap: 14px;
+	padding: 10px 20px;
+	background: var(--surface);
+	border-bottom: 1px solid var(--border);
+}
+.marca { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.marca strong { font-size: 1.05rem; }
+.marca span { color: var(--muted); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topo-dir { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.saude {
+	display: inline-flex; align-items: center; gap: 8px;
+	font-size: 0.78rem; color: var(--muted);
+	padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px;
+	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46vw;
+}
+.saude::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+.saude.ok::before { background: var(--ok); }
+.saude.falha { color: var(--erro); border-color: var(--erro); }
+.saude.falha::before { background: var(--erro); }
+.icone {
+	border: 1px solid var(--border); background: var(--surface); color: var(--text);
+	width: 34px; height: 34px; border-radius: 8px; cursor: pointer; font-size: 1rem; flex: none;
+}
+.icone:hover { background: var(--surface-2); }
+
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: calc(100vh - 57px); }
+body.sem-menu .layout { grid-template-columns: minmax(0, 1fr); }
+body.sem-menu .menu { display: none; }
+
+.menu {
+	border-right: 1px solid var(--border);
+	background: var(--surface);
+	padding: 18px 12px 40px;
+	position: sticky; top: 57px; align-self: start;
+	height: calc(100vh - 57px); overflow-y: auto;
+}
+.menu h4 {
+	margin: 18px 10px 6px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+.menu h4:first-child { margin-top: 0; }
+.menu a {
+	display: flex; align-items: center; gap: 10px;
+	padding: 7px 10px; border-radius: 8px;
+	color: var(--text); text-decoration: none; font-size: 0.92rem;
+}
+.menu a:hover { background: var(--surface-2); }
+.menu a.ativo { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); font-weight: 600; }
+.menu .num { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); width: 1.6em; text-align: right; flex: none; }
+.menu a.ativo .num { color: inherit; }
+
+.conteudo { padding: 28px 36px 40px; min-width: 0; }
+.pagina { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 26px; }
+.carregando { color: var(--muted); }
+
+/* ---------- blocos de pagina ---------- */
+.pag-cab .eyebrow { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.pag-cab h1 { font-size: 2.1rem; margin-top: 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.pag-cab h1 .sub { font-size: 1.1rem; font-weight: 500; color: var(--muted); }
+.pag-cab .lead { font-size: 1.12rem; margin: 10px 0 0; max-width: 70ch; }
+
+.secao { display: flex; flex-direction: column; gap: 14px; }
+.secao > h2 { font-size: 1.2rem; }
+.secao > .ajuda { margin: -6px 0 0; color: var(--muted); font-size: 0.92rem; }
+
+.cartao {
+	background: var(--surface); border: 1px solid var(--border); border-radius: var(--raio);
+	padding: 18px 20px; box-shadow: var(--sombra); min-width: 0;
+}
+.cartao > h3 { font-size: 1rem; margin-bottom: 10px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cartao > h3 .qtd { font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+
+.grade-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.grade-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.grade-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px; }
+.grade-dados { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 18px; }
+.grade-dados .largo { grid-column: 1 / -1; }
+
+.pergunta {
+	border-left: 4px solid var(--accent);
+	background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+	padding: 14px 18px; border-radius: 0 var(--raio) var(--raio) 0;
+}
+.pergunta .rot { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.pergunta p { margin: 4px 0 0; font-size: 1.15rem; font-weight: 600; }
+
+.nota { border-radius: var(--raio); padding: 14px 18px; border: 1px solid var(--border); background: var(--surface); }
+.nota .rot { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
+.nota ul { margin: 6px 0 0; padding-left: 1.2em; }
+.nota li + li { margin-top: 4px; }
+.nota p { margin: 6px 0 0; }
+.nota.repare { border-color: color-mix(in srgb, var(--cor-ab) 45%, var(--border)); }
+.nota.repare .rot { color: var(--cor-ab); }
+.nota.dica { border-color: color-mix(in srgb, var(--rel-11) 45%, var(--border)); }
+.nota.dica .rot { color: var(--rel-11); }
+.nota .codigo { margin-top: 10px; }
+
+.texto p { margin: 0 0 10px; }
+.texto p:last-child { margin-bottom: 0; }
+.lista-como { margin: 0; padding-left: 1.2em; }
+.lista-como li + li { margin-top: 6px; }
+
+/* ---------- codigo ---------- */
+.codigo { margin: 0; min-width: 0; }
+.codigo figcaption { font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.codigo pre {
+	margin: 0; padding: 14px 16px; background: var(--code-bg);
+	border: 1px solid var(--border); border-radius: 8px;
+	font-size: 0.88rem; line-height: 1.55; overflow-x: auto; white-space: pre;
+}
+.codigo.grande pre { font-size: 1rem; }
+.hl-k { color: var(--hl-k); font-weight: 600; }
+.hl-j { color: var(--hl-j); font-weight: 700; }
+.hl-s { color: var(--hl-s); }
+.hl-c { color: var(--hl-c); font-style: italic; }
+.hl-a { color: var(--hl-a); }
+.hl-n { color: var(--hl-n); }
+.hl-t { color: var(--hl-k); }
+
+/* ---------- tabelas de dados ---------- */
+.tabela-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+th { background: var(--surface-2); font-family: var(--mono); font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+td { font-variant-numeric: tabular-nums; }
+tr.grupos th { font-family: inherit; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.7rem; text-align: center; color: var(--text); }
+tr.grupos th.g-a { background: color-mix(in srgb, var(--cor-a) 22%, var(--surface)); }
+tr.grupos th.g-b { background: color-mix(in srgb, var(--cor-b) 22%, var(--surface)); }
+tr.grupos th + th { border-left: 2px solid var(--surface); }
+th.col-on { color: var(--text); box-shadow: inset 0 -3px 0 var(--rel-11); }
+td.col-on { font-weight: 700; }
+.nulo { font-family: var(--mono); font-size: 0.8em; color: var(--muted); font-style: italic; opacity: 0.85; }
+.bool { font-family: var(--mono); font-size: 0.85em; }
+td.vazio { color: var(--muted); font-style: italic; text-align: center; }
+.mono { font-family: var(--mono); }
+
+tbody tr { transition: background-color 0.12s, opacity 0.12s; }
+tbody tr.reg-a td:first-child, tbody tr.reg-b td:first-child, tbody tr.reg-ab td:first-child { box-shadow: inset 4px 0 0 var(--cor-linha); }
+tr.reg-a { --cor-linha: var(--cor-a); background: color-mix(in srgb, var(--cor-a) 11%, transparent); }
+tr.reg-b { --cor-linha: var(--cor-b); background: color-mix(in srgb, var(--cor-b) 11%, transparent); }
+tr.reg-ab { --cor-linha: var(--cor-ab); background: color-mix(in srgb, var(--cor-ab) 12%, transparent); }
+tr.fora { background: transparent; opacity: 0.38; }
+tr.fora td { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text) 35%, transparent); }
+tr.fora td:first-child { box-shadow: inset 4px 0 0 color-mix(in srgb, var(--cor-linha) 45%, transparent); }
+tr.foco, tr.ligado { opacity: 1; }
+tr.foco td { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+tr.ligado td { background: color-mix(in srgb, var(--accent) 11%, transparent); }
+.passe-mouse tbody tr { cursor: default; }
+
+.marca-col { display: inline-block; margin-left: 6px; padding: 0 4px; border-radius: 3px; font-size: 0.62rem; font-weight: 700; vertical-align: 1px; color: #fff; }
+.m-pk { background: var(--pk); }
+.m-fk { background: var(--fk); }
+.m-uq { background: var(--uq); }
+
+.titulo-tabela { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.titulo-tabela strong { font-family: var(--mono); font-size: 0.95rem; }
+.titulo-tabela .papel { font-size: 0.7rem; font-weight: 700; color: #fff; padding: 1px 7px; border-radius: 999px; }
+.papel.p-a { background: var(--cor-a); }
+.papel.p-b { background: var(--cor-b); }
+.titulo-tabela .qtd { color: var(--muted); font-size: 0.82rem; }
+.titulo-tabela .sql-mini { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-left: auto; }
+
+/* ---------- diagrama ER ---------- */
+.er { width: 100%; height: auto; display: block; }
+.er-caixa { fill: var(--surface); stroke: var(--border); stroke-width: 1.2; }
+.er-cabeca { fill: var(--surface-2); }
+.er-nome { font: 700 14px var(--mono); fill: var(--text); }
+.er-col { font: 13px var(--mono); fill: var(--text); }
+.er-col.er-pk { font-weight: 700; }
+.er-tipo { font: 11px var(--mono); fill: var(--muted); }
+.er-sep { stroke: var(--border); stroke-width: 1; }
+.er-badge.b-pk { fill: var(--pk); }
+.er-badge.b-fk { fill: var(--fk); }
+.er-badge.b-uq { fill: var(--uq); }
+.er-badge.b-ck { fill: var(--ck); }
+.er-badge.b-null { fill: none; stroke: var(--nn); stroke-dasharray: 2 2; }
+.er-badge-txt { font: 700 9.5px var(--mono); fill: #fff; }
+.er-badge-txt.t-null { fill: var(--nn); }
+.er-lig { fill: none; stroke-width: 2.2; }
+.er-lig.rel-1n, .er-ponta.rel-1n { stroke: var(--rel-1n); }
+.er-lig.rel-11, .er-ponta.rel-11 { stroke: var(--rel-11); }
+.er-lig.rel-nm, .er-ponta.rel-nm { stroke: var(--rel-nm); }
+.er-ponta { fill: var(--surface); stroke-width: 2; }
+.er-card { font: 700 12px var(--mono); }
+.er-card.rel-1n { fill: var(--rel-1n); }
+.er-card.rel-11 { fill: var(--rel-11); }
+.er-card.rel-nm { fill: var(--rel-nm); }
+
+.legenda-er { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 0.85rem; color: var(--muted); }
+.legenda-er span { display: inline-flex; align-items: center; gap: 7px; }
+.traco { width: 22px; height: 3px; border-radius: 2px; display: inline-block; }
+.traco.rel-1n { background: var(--rel-1n); }
+.traco.rel-11 { background: var(--rel-11); }
+.traco.rel-nm { background: var(--rel-nm); }
+.selo { font: 700 0.62rem var(--mono); color: #fff; padding: 1px 5px; border-radius: 3px; }
+.selo.s-pk { background: var(--pk); }
+.selo.s-fk { background: var(--fk); }
+.selo.s-uq { background: var(--uq); }
+.selo.s-ck { background: var(--ck); }
+.selo.s-nn { background: var(--nn); }
+.selo.s-null { background: transparent; color: var(--nn); border: 1px dashed var(--nn); }
+
+/* ---------- Venn ---------- */
+.venn-caixa { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.venn { width: 100%; max-width: 360px; height: auto; }
+.venn .regiao { fill: var(--surface-2); transition: fill 0.2s; }
+.venn .on.r-a { fill: color-mix(in srgb, var(--cor-a) 62%, transparent); }
+.venn .on.r-b { fill: color-mix(in srgb, var(--cor-b) 62%, transparent); }
+.venn .on.r-ab { fill: color-mix(in srgb, var(--cor-ab) 70%, transparent); }
+.venn .contorno { fill: none; stroke: var(--text); stroke-width: 1.6; opacity: 0.55; }
+.venn .letra { font: 700 26px system-ui, sans-serif; fill: var(--text); opacity: 0.8; }
+.venn .nome { font: 600 13px var(--mono); fill: var(--muted); }
+.venn .rot-where { font: 700 12px var(--mono); fill: var(--text); }
+.legenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 360px; font-size: 0.88rem; }
+.legenda li { display: flex; align-items: center; gap: 10px; }
+.legenda .amostra { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+.amostra.reg-a { background: var(--cor-a); }
+.amostra.reg-b { background: var(--cor-b); }
+.amostra.reg-ab { background: var(--cor-ab); }
+.amostra.reg-fora { background: var(--surface-2); border: 1px solid var(--border); }
+.legenda .status { margin-left: auto; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.legenda li.entra .status { color: var(--ok); }
+.legenda li.sai { color: var(--muted); }
+.legenda li.sai .status { color: var(--muted); }
+.legenda li.sai .amostra { opacity: 0.35; }
+
+.consulta-topo { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 26px; align-items: start; }
+.consulta-explica { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.consulta-explica > p { margin: 0; font-size: 1.02rem; }
+
+.alternar { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; align-self: flex-start; }
+.alternar button { border: 0; background: var(--surface); color: var(--text); padding: 7px 14px; font: 600 0.85rem var(--mono); cursor: pointer; }
+.alternar button + button { border-left: 1px solid var(--border); }
+.alternar button.ativo { background: var(--accent); color: #fff; }
+
+.resultado-cab { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.resultado-cab h2 { font-size: 1.2rem; }
+.resultado-cab .qtd { color: var(--muted); font-size: 0.9rem; }
+.resultado-cab .ajuda { color: var(--muted); font-size: 0.85rem; margin-left: auto; }
+
+/* ---------- constraints ---------- */
+.catalogo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.catalogo li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 10px; align-items: baseline; font-size: 0.85rem; }
+.catalogo .tipo { font: 700 0.62rem var(--mono); color: #fff; padding: 2px 6px; border-radius: 4px; text-align: center; }
+.catalogo .def { font-family: var(--mono); font-size: 0.8rem; overflow-wrap: anywhere; }
+.catalogo .nome { grid-column: 2; color: var(--muted); font-family: var(--mono); font-size: 0.7rem; }
+.t-pk { background: var(--pk); }
+.t-fk { background: var(--fk); }
+.t-uq { background: var(--uq); }
+.t-ck { background: var(--ck); }
+.t-nn { background: var(--nn); }
+
+details.ver-sql summary { cursor: pointer; color: var(--muted); font-size: 0.88rem; }
+details.ver-sql[open] summary { margin-bottom: 10px; }
+
+.exp { display: flex; flex-direction: column; gap: 12px; }
+.exp header { display: flex; align-items: flex-start; gap: 10px; }
+.exp h3 { font-size: 1rem; }
+.exp .espera { margin-left: auto; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid; }
+.espera.aceita { color: var(--ok); }
+.espera.recusa { color: var(--erro); }
+.exp > p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+.exp .mini { font-size: 0.8rem; color: var(--muted); margin: 0; }
+.botao {
+	align-self: flex-start;
+	background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+	padding: 8px 16px; font: 600 0.9rem inherit; cursor: pointer;
+}
+.botao:hover { filter: brightness(1.08); }
+.botao:disabled { opacity: 0.6; cursor: wait; }
+.botao.sec { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.botao.sec.ativo { background: var(--accent); color: #fff; border-color: var(--accent); }
+.exp-saida:empty { display: none; }
+.exp-saida { display: flex; flex-direction: column; gap: 10px; }
+.veredito { border-radius: 8px; padding: 10px 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.veredito.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
+.veredito.erro { background: color-mix(in srgb, var(--erro) 12%, transparent); color: var(--erro); }
+.erro-pg { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 0.85rem; }
+.erro-pg dt { color: var(--muted); }
+.erro-pg dd { margin: 0; font-family: var(--mono); font-size: 0.8rem; overflow-wrap: anywhere; }
+.rollback { font-size: 0.78rem; color: var(--muted); margin: 0; }
+.antes-depois { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.antes-depois .rot { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 4px; }
+
+/* ---------- prisma ---------- */
+.botoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.json pre { max-height: 640px; overflow: auto; }
+.hl-jk { color: var(--hl-a); }
+
+/* ---------- caixa de erro e rodape ---------- */
+.falha-caixa { border: 1px solid var(--erro); background: color-mix(in srgb, var(--erro) 8%, var(--surface)); border-radius: var(--raio); padding: 16px 20px; }
+.falha-caixa strong { color: var(--erro); }
+.falha-caixa pre { white-space: pre-wrap; font-size: 0.82rem; margin: 8px 0 0; }
+
+.rodape {
+	max-width: 1280px; margin: 36px auto 0; padding-top: 18px; border-top: 1px solid var(--border);
+	display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
+}
+.rodape a { text-decoration: none; font-weight: 600; padding: 8px 12px; border-radius: 8px; }
+.rodape a:hover { background: var(--surface-2); }
+.rodape .prox { justify-self: end; text-align: right; }
+.rodape .ant { justify-self: start; }
+.rodape .pos { color: var(--muted); font-size: 0.85rem; font-family: var(--mono); }
+
+@media (max-width: 1100px) {
+	.grade-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.consulta-topo { grid-template-columns: minmax(0, 1fr); }
+	.venn-caixa { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+}
+@media (max-width: 860px) {
+	html { font-size: 16px; }
+	.layout { grid-template-columns: minmax(0, 1fr); }
+	.menu {
+		position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border);
+		display: flex; gap: 4px; overflow-x: auto; padding: 8px 16px;
+	}
+	.menu h4 { display: none; }
+	.menu a { white-space: nowrap; flex: none; }
+	.conteudo { padding: 20px 16px 32px; }
+	.grade-2, .grade-3, .antes-depois { grid-template-columns: minmax(0, 1fr); }
+	.grade-auto { grid-template-columns: minmax(0, 1fr); }
+	.pag-cab h1 { font-size: 1.6rem; }
+	.marca span { display: none; }
+	.saude { max-width: 40vw; }
+}
+</style>
 </head>
 <body>
-  <main>
-    <!-- Tela de login -->
-    <section id="login" hidden>
-      <h1>Entrar</h1>
-      <form id="form-login">
-        <div class="campo">
-          <label for="usuario">Usuário</label>
-          <input id="usuario" name="usuario" autocomplete="username" autofocus required>
-        </div>
-        <div class="campo">
-          <label for="senha">Senha</label>
-          <input id="senha" name="senha" type="password" autocomplete="current-password" required>
-        </div>
-        <p id="erro-login"></p>
-        <button type="submit" id="botao-entrar">Entrar</button>
-      </form>
-    </section>
+<header class="topo">
+	<button id="btn-menu" class="icone" title="Mostrar/ocultar o menu (tecla M)" aria-label="Mostrar ou ocultar o menu">☰</button>
+	<div class="marca">
+		<strong>Mini Atendimento</strong>
+		<span>Modelagem de dados com PostgreSQL</span>
+	</div>
+	<div class="topo-dir">
+		<span id="saude" class="saude" title="Conexão do backend com o banco">verificando o banco…</span>
+		<button id="btn-tema" class="icone" title="Alternar tema claro/escuro" aria-label="Alternar tema"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor"/></svg></button>
+	</div>
+</header>
+<div class="layout">
+	<nav id="menu" class="menu" aria-label="Roteiro da aula"></nav>
+	<main id="conteudo" class="conteudo"></main>
+</div>
 
-    <!-- App, só aparece com sessão válida -->
-    <section id="app" hidden>
-      <div id="topo">
-        <h1>Busca de Nomes</h1>
-        <button id="sair" type="button">Sair (<span id="quem"></span>)</button>
-      </div>
-      <input id="busca" type="search" placeholder="Digite parte de um nome..." autocomplete="off">
-      <div id="meta">
-        <span id="contagem"></span>
-        <span>respondido por <span id="servidor">—</span></span>
-      </div>
-      <ul id="resultado"></ul>
-    </section>
-  </main>
+<script>
+'use strict';
 
-  <script>
-    // Vazio = mesma origem (o Nginx faz o proxy de /api).
-    // Se a API estiver em outro domínio, coloque aqui a URL completa —
-    // é a partir daí que o CORS entra em cena.
-    const API = '';
+/* =====================================================================
+ * Modelo: espelho do schema.prisma, usado para desenhar os diagramas.
+ * Cada coluna: [nome, tipo, ...marcas]. Marcas: PK, FK, UQ, CK, NULL.
+ * ===================================================================== */
+const MODELO = {
+	clientes: [['id', 'INT', 'PK'], ['nome', 'TEXT'], ['email', 'TEXT', 'UQ'], ['criado_em', 'TIMESTAMP']],
+	atendentes: [['id', 'INT', 'PK'], ['nome', 'TEXT'], ['email', 'TEXT', 'UQ'], ['ativo', 'BOOLEAN']],
+	tickets: [
+		['id', 'INT', 'PK'],
+		['titulo', 'TEXT'],
+		['status', 'status_ticket'],
+		['cliente_id', 'INT', 'FK'],
+		['atendente_id', 'INT', 'FK', 'NULL'],
+		['criado_em', 'TIMESTAMP'],
+	],
+	avaliacoes: [['id', 'INT', 'PK'], ['ticket_id', 'INT', 'FK', 'UQ'], ['nota', 'INT', 'CK'], ['comentario', 'TEXT', 'NULL']],
+	tags: [['id', 'INT', 'PK'], ['nome', 'TEXT', 'UQ']],
+	tickets_tags: [['ticket_id', 'INT', 'PK', 'FK'], ['tag_id', 'INT', 'PK', 'FK']],
+};
 
-    const telaLogin = document.getElementById('login');
-    const telaApp = document.getElementById('app');
-    const formLogin = document.getElementById('form-login');
-    const botaoEntrar = document.getElementById('botao-entrar');
-    const erroLogin = document.getElementById('erro-login');
-    const quem = document.getElementById('quem');
-    const campo = document.getElementById('busca');
-    const lista = document.getElementById('resultado');
-    const contagem = document.getElementById('contagem');
-    const servidor = document.getElementById('servidor');
+// de = coluna FK, para = coluna referenciada. card = cardinalidade em cada ponta.
+const LIGACOES = [
+	{ de: 'tickets.cliente_id', para: 'clientes.id', tipo: '1n', cardDe: 'N', cardPara: '1' },
+	{ de: 'tickets.atendente_id', para: 'atendentes.id', tipo: '1n', cardDe: 'N', cardPara: '0..1' },
+	{ de: 'avaliacoes.ticket_id', para: 'tickets.id', tipo: '11', cardDe: '0..1', cardPara: '1' },
+	{ de: 'tickets_tags.ticket_id', para: 'tickets.id', tipo: 'nm', cardDe: 'N', cardPara: '1' },
+	{ de: 'tickets_tags.tag_id', para: 'tags.id', tipo: 'nm', cardDe: 'N', cardPara: '1' },
+];
 
-    let timer;
+/* =====================================================================
+ * Utilitarios de DOM e de API
+ * ===================================================================== */
+function el(tag, props, ...filhos) {
+	const no = document.createElement(tag);
+	for (const [chave, valor] of Object.entries(props || {})) {
+		if (valor == null || valor === false) continue;
+		if (chave === 'class') no.className = valor;
+		else if (chave === 'html') no.innerHTML = valor;
+		else if (chave.startsWith('on')) no.addEventListener(chave.slice(2), valor);
+		else no.setAttribute(chave, valor === true ? '' : valor);
+	}
+	for (const filho of filhos.flat(Infinity)) {
+		if (filho == null || filho === false) continue;
+		no.append(filho instanceof Node ? filho : String(filho));
+	}
+	return no;
+}
 
-    // credentials: 'include' é o que manda o cookie junto.
-    // Sem isso o navegador não envia cookie nenhum para outra origem.
-    function chamar(caminho, opcoes = {}) {
-      return fetch(API + caminho, { credentials: 'include', ...opcoes });
-    }
+function escapar(texto) {
+	return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
-    function mostrarLogin() {
-      telaApp.hidden = true;
-      telaLogin.hidden = false;
-      document.getElementById('usuario').focus();
-    }
+async function api(caminho, opcoes) {
+	const resposta = await fetch(caminho, opcoes);
+	const corpo = await resposta.json().catch(() => ({}));
+	if (!resposta.ok) throw new Error(corpo.motivo || corpo.message || `HTTP ${resposta.status} em ${caminho}`);
+	return corpo;
+}
 
-    function mostrarApp(usuario) {
-      telaLogin.hidden = true;
-      telaApp.hidden = false;
-      quem.textContent = usuario;
-      campo.focus();
-      buscar();
-    }
+/* =====================================================================
+ * Realce de sintaxe (simples, so o suficiente para leitura em aula)
+ * ===================================================================== */
+const SQL_JUNCOES = ['FULL OUTER JOIN', 'RIGHT JOIN', 'INNER JOIN', 'LEFT JOIN', 'UNION ALL', 'UNION', 'JOIN'];
+const SQL_PALAVRAS = [
+	'CREATE TABLE', 'PRIMARY KEY', 'FOREIGN KEY', 'INSERT INTO', 'DELETE FROM', 'ON DELETE', 'ORDER BY', 'GROUP BY',
+	'REFERENCES', 'RETURNING', 'TIMESTAMP', 'DISTINCT', 'RESTRICT', 'CASCADE', 'BETWEEN', 'BOOLEAN', 'DEFAULT',
+	'SELECT', 'VALUES', 'UPDATE', 'UNIQUE', 'SERIAL', 'WHERE', 'CHECK', 'LIMIT', 'FROM', 'NULL', 'TEXT', 'CASE',
+	'WHEN', 'THEN', 'ELSE', 'AND', 'NOT', 'SET', 'END', 'INT', 'AS', 'OR', 'IS', 'IN', 'ON',
+];
+const RE_SQL = new RegExp(
+	`('(?:[^']|'')*')|(--[^\\n]*)|\\b(${SQL_JUNCOES.join('|').replace(/ /g, '\\s+')})\\b|\\b(${SQL_PALAVRAS.join('|').replace(/ /g, '\\s+')})\\b|\\b(\\d+)\\b`,
+	'g',
+);
 
-    function mostrarErro(texto) {
-      servidor.textContent = '—';
-      contagem.textContent = '';
-      lista.innerHTML = '<li class="erro"></li>';
-      lista.firstChild.textContent = texto;
-    }
+function realcarSql(sql) {
+	return escapar(sql).replace(RE_SQL, (m, texto, comentario, juncao, palavra, numero) => {
+		if (texto) return `<span class="hl-s">${texto}</span>`;
+		if (comentario) return `<span class="hl-c">${comentario}</span>`;
+		if (juncao) return `<span class="hl-j">${juncao}</span>`;
+		if (palavra) return `<span class="hl-k">${palavra}</span>`;
+		return `<span class="hl-n">${numero}</span>`;
+	});
+}
 
-    async function buscar() {
-      const inicio = performance.now();
+function realcarCodigo(codigo) {
+	return escapar(codigo).replace(
+		/(\/\/[^\n]*)|("[^"\n]*"|'[^'\n]*')|(@@?\w+)|\b(model|enum|return|this|true|false|const|await|async)\b|\b(Int|String|Boolean|DateTime)\b/g,
+		(m, comentario, texto, atributo, palavra, tipo) => {
+			if (comentario) return `<span class="hl-c">${comentario}</span>`;
+			if (texto) return `<span class="hl-s">${texto}</span>`;
+			if (atributo) return `<span class="hl-a">${atributo}</span>`;
+			if (palavra) return `<span class="hl-k">${palavra}</span>`;
+			return `<span class="hl-t">${tipo}</span>`;
+		},
+	);
+}
 
-      let resposta;
-      try {
-        resposta = await chamar('/api/pessoas?busca=' + encodeURIComponent(campo.value));
-      } catch (falha) {
-        mostrarErro('Não foi possível falar com o servidor: ' + falha.message);
-        return;
-      }
+function realcarJson(objeto) {
+	return escapar(JSON.stringify(objeto, null, 2)).replace(
+		/("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false)\b|\bnull\b|-?\b\d+(?:\.\d+)?\b/g,
+		(m, texto, doisPontos, booleano) => {
+			if (texto) return doisPontos ? `<span class="hl-jk">${texto}</span>${doisPontos}` : `<span class="hl-s">${texto}</span>`;
+			if (booleano) return `<span class="hl-k">${m}</span>`;
+			if (m === 'null') return `<span class="hl-c">null</span>`;
+			return `<span class="hl-n">${m}</span>`;
+		},
+	);
+}
 
-      // Cookie expirado ou apagado: a sessão acabou, volta para o login.
-      if (resposta.status === 401) {
-        mostrarLogin();
-        return;
-      }
+function codigo(texto, { linguagem = 'sql', titulo, grande } = {}) {
+	const html = linguagem === 'sql' ? realcarSql(texto) : linguagem === 'json' ? realcarJson(texto) : realcarCodigo(texto);
+	return el('figure', { class: `codigo${grande ? ' grande' : ''}` }, titulo && el('figcaption', {}, titulo), el('pre', { html }));
+}
 
-      if (!resposta.ok) {
-        mostrarErro(`O servidor respondeu ${resposta.status} ${resposta.statusText}. ` +
-          (resposta.status >= 502 ? 'O proxy não conseguiu falar com o backend.' : ''));
-        return;
-      }
+/* =====================================================================
+ * Tabelas de dados
+ * ===================================================================== */
+function valor(v) {
+	if (v === null || v === undefined) return el('span', { class: 'nulo' }, 'NULL');
+	if (typeof v === 'boolean') return el('span', { class: 'bool' }, String(v));
+	// Datas chegam em ISO/UTC. Mostramos em UTC, igual ao que o psql mostra.
+	if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) return `${v.slice(8, 10)}/${v.slice(5, 7)} ${v.slice(11, 16)}`;
+	return String(v);
+}
 
-      const json = await resposta.json();
-      const ms = Math.round(performance.now() - inicio);
+function marcasDe(tabelaNome, coluna) {
+	const definicao = (MODELO[tabelaNome] || []).find(([nome]) => nome === coluna);
+	return definicao ? definicao.slice(2).filter((m) => ['PK', 'FK', 'UQ'].includes(m)) : [];
+}
 
-      servidor.textContent = json.servidor;
-      contagem.textContent = `${json.total} resultado(s) em ${ms} ms`;
+// opcoes: colunas, nome (tabela do banco, para mostrar PK/FK), destaque (colunas realcadas),
+// grupos (cabecalho agrupando colunas), classeLinha(linha), aoCriarLinha(linha, tr)
+function tabela(linhas, opcoes = {}) {
+	const colunas = opcoes.colunas || (linhas.length ? Object.keys(linhas[0]) : []);
+	const destaque = opcoes.destaque || [];
+	const classeCol = (c) => (destaque.includes(c) ? 'col-on' : null);
 
-      lista.innerHTML = '';
-      if (json.dados.length === 0) {
-        lista.innerHTML = '<li class="vazio">Nenhum nome encontrado.</li>';
-        return;
-      }
-      for (const pessoa of json.dados) {
-        const item = document.createElement('li');
-        item.textContent = pessoa.nome;
-        lista.appendChild(item);
-      }
-    }
+	const thead = el('thead');
+	if (opcoes.grupos) {
+		thead.append(el('tr', { class: 'grupos' }, opcoes.grupos.map((g) => el('th', { colspan: g.colunas.length, class: g.classe }, g.rotulo))));
+	}
+	thead.append(
+		el('tr', {}, colunas.map((c) => el('th', { class: classeCol(c) }, c, opcoes.nome && marcasDe(opcoes.nome, c).map((m) => el('span', { class: `marca-col m-${m.toLowerCase()}` }, m))))),
+	);
 
-    formLogin.addEventListener('submit', async (evento) => {
-      evento.preventDefault();
-      erroLogin.textContent = '';
-      botaoEntrar.disabled = true;
+	const tbody = el('tbody');
+	for (const linha of linhas) {
+		const tr = el('tr', { class: opcoes.classeLinha?.(linha) }, colunas.map((c) => el('td', { class: classeCol(c) }, valor(linha[c]))));
+		opcoes.aoCriarLinha?.(linha, tr);
+		tbody.append(tr);
+	}
+	if (!linhas.length) tbody.append(el('tr', {}, el('td', { colspan: Math.max(colunas.length, 1), class: 'vazio' }, 'nenhuma linha')));
 
-      try {
-        const resposta = await chamar('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            usuario: document.getElementById('usuario').value,
-            senha: document.getElementById('senha').value
-          })
-        });
+	return el('div', { class: 'tabela-wrap' }, el('table', {}, thead, tbody));
+}
 
-        const json = await resposta.json().catch(() => ({}));
+function tituloTabela(nome, { papel, qtd, sql } = {}) {
+	return el(
+		'div',
+		{ class: 'titulo-tabela' },
+		papel && el('span', { class: `papel p-${papel.toLowerCase()}` }, papel),
+		el('strong', {}, nome),
+		qtd != null && el('span', { class: 'qtd' }, `${qtd} ${qtd === 1 ? 'linha' : 'linhas'}`),
+		sql && el('span', { class: 'sql-mini' }, sql),
+	);
+}
 
-        if (!resposta.ok) {
-          erroLogin.textContent = json.erro || `Erro ${resposta.status}`;
-          return;
-        }
+// Passar o mouse numa linha acende as linhas ligadas a ela pelas FKs,
+// seguindo as ligacoes sem voltar para uma tabela ja visitada.
+function relacionados(tabelaNome, linha, dados, ligacoes) {
+	const achados = [];
+	const visitadas = new Set([tabelaNome]);
+	let fronteira = [[tabelaNome, linha]];
+	while (fronteira.length) {
+		const proxima = [];
+		const novas = new Set();
+		for (const [t, l] of fronteira) {
+			for (const lig of ligacoes) {
+				const [dt, dc] = lig.de.split('.');
+				const [pt, pc] = lig.para.split('.');
+				if (dt === t && !visitadas.has(pt) && l[dc] != null) {
+					for (const x of dados[pt] || []) if (x[pc] === l[dc]) proxima.push([pt, x]), novas.add(pt);
+				}
+				if (pt === t && !visitadas.has(dt)) {
+					for (const x of dados[dt] || []) if (x[dc] === l[pc]) proxima.push([dt, x]), novas.add(dt);
+				}
+			}
+		}
+		novas.forEach((t) => visitadas.add(t));
+		achados.push(...proxima);
+		fronteira = proxima;
+	}
+	return achados;
+}
 
-        document.getElementById('senha').value = '';
-        mostrarApp(json.usuario);
-      } catch (falha) {
-        erroLogin.textContent = 'Não foi possível falar com o servidor: ' + falha.message;
-      } finally {
-        botaoEntrar.disabled = false;
-      }
-    });
+function limparFoco() {
+	document.querySelectorAll('tr.foco, tr.ligado').forEach((tr) => tr.classList.remove('foco', 'ligado'));
+}
 
-    document.getElementById('sair').addEventListener('click', async () => {
-      await chamar('/api/logout', { method: 'POST' }).catch(() => {});
-      mostrarLogin();
-    });
+function ligarPorFk(registro, dados, ligacoes) {
+	for (const [nome, itens] of registro) {
+		for (const { linha, tr } of itens) {
+			tr.addEventListener('mouseenter', () => {
+				tr.classList.add('foco');
+				for (const [t, l] of relacionados(nome, linha, dados, ligacoes)) {
+					registro.get(t)?.find((item) => item.linha === l)?.tr.classList.add('ligado');
+				}
+			});
+			tr.addEventListener('mouseleave', limparFoco);
+		}
+	}
+}
 
-    campo.addEventListener('input', () => {
-      clearTimeout(timer);
-      timer = setTimeout(buscar, 250);
-    });
+/* =====================================================================
+ * Diagrama ER (SVG)
+ * ===================================================================== */
+const CAIXA = { largura: 220, topo: 34, linha: 26 };
 
-    // Ao abrir a página o JS não consegue ler o cookie (ele é HttpOnly).
-    // A única forma de saber se há sessão é perguntar ao servidor.
-    (async function iniciar() {
-      try {
-        const resposta = await chamar('/api/eu');
-        if (resposta.ok) {
-          const json = await resposta.json();
-          mostrarApp(json.usuario);
-          return;
-        }
-      } catch { /* servidor fora do ar: cai no login */ }
-      mostrarLogin();
-    })();
-  </script>
+function desenharER(posicoes, largura, altura) {
+	const caixa = (nome) => {
+		const [x, y] = posicoes[nome];
+		return { x, y, w: CAIXA.largura, h: CAIXA.topo + MODELO[nome].length * CAIXA.linha };
+	};
+	const yColuna = (nome, coluna) => {
+		const i = MODELO[nome].findIndex(([n]) => n === coluna);
+		return caixa(nome).y + CAIXA.topo + i * CAIXA.linha + CAIXA.linha / 2;
+	};
+
+	let ligacoes = '';
+	for (const lig of LIGACOES) {
+		const [dt, dc] = lig.de.split('.');
+		const [pt, pc] = lig.para.split('.');
+		if (!posicoes[dt] || !posicoes[pt]) continue;
+		const a = caixa(dt);
+		const b = caixa(pt);
+		const s = b.x > a.x ? 1 : -1;
+		const x1 = s > 0 ? a.x + a.w : a.x;
+		const x2 = s > 0 ? b.x : b.x + b.w;
+		const y1 = yColuna(dt, dc);
+		const y2 = yColuna(pt, pc);
+		const d = Math.max(34, Math.abs(x2 - x1) / 2);
+		ligacoes += `<path class="er-lig rel-${lig.tipo}" d="M${x1} ${y1} C${x1 + s * d} ${y1} ${x2 - s * d} ${y2} ${x2} ${y2}"/>`;
+		ligacoes += `<circle class="er-ponta rel-${lig.tipo}" cx="${x1}" cy="${y1}" r="3.5"/><circle class="er-ponta rel-${lig.tipo}" cx="${x2}" cy="${y2}" r="3.5"/>`;
+		ligacoes += `<text class="er-card rel-${lig.tipo}" x="${x1 + s * 8}" y="${y1 - 7}" text-anchor="${s > 0 ? 'start' : 'end'}">${lig.cardDe}</text>`;
+		ligacoes += `<text class="er-card rel-${lig.tipo}" x="${x2 - s * 8}" y="${y2 - 7}" text-anchor="${s > 0 ? 'end' : 'start'}">${lig.cardPara}</text>`;
+	}
+
+	let caixas = '';
+	for (const nome of Object.keys(posicoes)) {
+		const { x, y, w, h } = caixa(nome);
+		const t = CAIXA.topo;
+		caixas += `<g><rect class="er-caixa" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/>`;
+		caixas += `<path class="er-cabeca" d="M${x + 0.6} ${y + t} V${y + 8} Q${x + 0.6} ${y + 0.6} ${x + 8} ${y + 0.6} H${x + w - 8} Q${x + w - 0.6} ${y + 0.6} ${x + w - 0.6} ${y + 8} V${y + t} Z"/>`;
+		caixas += `<text class="er-nome" x="${x + 12}" y="${y + 22}">${nome}</text>`;
+		MODELO[nome].forEach(([coluna, tipo, ...marcas], i) => {
+			const yl = y + t + i * CAIXA.linha;
+			caixas += `<line class="er-sep" x1="${x}" x2="${x + w}" y1="${yl}" y2="${yl}"/>`;
+			caixas += `<text class="er-col${marcas.includes('PK') ? ' er-pk' : ''}" x="${x + 12}" y="${yl + 17}">${coluna}</text>`;
+			caixas += `<text class="er-tipo" x="${x + 112}" y="${yl + 17}">${tipo}</text>`;
+			let xb = x + w - 10;
+			for (const marca of [...marcas].reverse()) {
+				const bw = 10 + marca.length * 6.5;
+				xb -= bw;
+				const m = marca.toLowerCase();
+				caixas += `<rect class="er-badge b-${m}" x="${xb}" y="${yl + 6}" width="${bw}" height="15" rx="4"/>`;
+				caixas += `<text class="er-badge-txt t-${m}" x="${xb + bw / 2}" y="${yl + 17}" text-anchor="middle">${marca}</text>`;
+				xb -= 4;
+			}
+		});
+		caixas += '</g>';
+	}
+
+	return el('div', {
+		html: `<svg class="er" viewBox="0 0 ${largura} ${altura}" style="max-width:${largura}px" role="img" aria-label="Diagrama entidade-relacionamento">${ligacoes}${caixas}</svg>`,
+	});
+}
+
+function legendaER() {
+	return el(
+		'div',
+		{ class: 'legenda-er' },
+		el('span', {}, el('i', { class: 'traco rel-1n' }), '1:N'),
+		el('span', {}, el('i', { class: 'traco rel-11' }), '1:1'),
+		el('span', {}, el('i', { class: 'traco rel-nm' }), 'N:M (pela tabela associativa)'),
+		el('span', {}, el('b', { class: 'selo s-pk' }, 'PK'), 'chave primária'),
+		el('span', {}, el('b', { class: 'selo s-fk' }, 'FK'), 'chave estrangeira'),
+		el('span', {}, el('b', { class: 'selo s-uq' }, 'UQ'), 'UNIQUE'),
+		el('span', {}, el('b', { class: 'selo s-ck' }, 'CK'), 'CHECK'),
+		el('span', {}, el('b', { class: 'selo s-null' }, 'NULL'), 'aceita NULL (o resto é NOT NULL)'),
+	);
+}
+
+/* =====================================================================
+ * Diagrama de Venn
+ * ===================================================================== */
+function venn(tipo, nomeA, nomeB) {
+	const id = `v${Math.random().toString(36).slice(2, 8)}`;
+	if (tipo === 'select') {
+		return el('div', {
+			html: `<svg class="venn" viewBox="0 0 340 220" role="img" aria-label="Uma tabela filtrada pelo WHERE">
+				<circle class="regiao" cx="170" cy="104" r="92"/>
+				<circle class="regiao on r-a" cx="196" cy="122" r="50"/>
+				<circle class="contorno" cx="170" cy="104" r="92"/>
+				<circle class="contorno" cx="196" cy="122" r="50" stroke-dasharray="5 4"/>
+				<text class="letra" x="112" y="84">A</text>
+				<text class="rot-where" x="196" y="126" text-anchor="middle">WHERE</text>
+				<text class="nome" x="170" y="214" text-anchor="middle">${nomeA}</text>
+			</svg>`,
+		});
+	}
+	const ativos = REGIOES[tipo];
+	const on = (r) => (ativos.includes(r) ? ' on' : '');
+	return el('div', {
+		html: `<svg class="venn" viewBox="0 0 340 220" role="img" aria-label="Diagrama de Venn do ${tipo}">
+			<defs>
+				<clipPath id="${id}-a"><circle cx="125" cy="104" r="80"/></clipPath>
+				<mask id="${id}-sem-a"><rect width="340" height="220" fill="white"/><circle cx="125" cy="104" r="80" fill="black"/></mask>
+				<mask id="${id}-sem-b"><rect width="340" height="220" fill="white"/><circle cx="215" cy="104" r="80" fill="black"/></mask>
+			</defs>
+			<circle class="regiao r-a${on('a')}" cx="125" cy="104" r="80" mask="url(#${id}-sem-b)"/>
+			<circle class="regiao r-b${on('b')}" cx="215" cy="104" r="80" mask="url(#${id}-sem-a)"/>
+			<circle class="regiao r-ab${on('ab')}" cx="215" cy="104" r="80" clip-path="url(#${id}-a)"/>
+			<circle class="contorno" cx="125" cy="104" r="80"/>
+			<circle class="contorno" cx="215" cy="104" r="80"/>
+			<text class="letra" x="82" y="113" text-anchor="middle">A</text>
+			<text class="letra" x="258" y="113" text-anchor="middle">B</text>
+			<text class="nome" x="20" y="212">${nomeA}</text>
+			<text class="nome" x="320" y="212" text-anchor="end">${nomeB}</text>
+		</svg>`,
+	});
+}
+
+const REGIOES = { inner: ['ab'], left: ['a', 'ab'], right: ['ab', 'b'], full: ['a', 'ab', 'b'], union: ['a', 'ab', 'b'] };
+
+function legendaVenn(cfg) {
+	if (cfg.tipo === 'select') {
+		return el(
+			'ul',
+			{ class: 'legenda' },
+			el('li', { class: 'entra' }, el('span', { class: 'amostra reg-a' }), cfg.legenda.a, el('span', { class: 'status' }, 'entra')),
+			el('li', { class: 'sai' }, el('span', { class: 'amostra reg-fora' }), cfg.legenda.fora, el('span', { class: 'status' }, 'fica de fora')),
+		);
+	}
+	const ativos = REGIOES[cfg.tipo];
+	return el(
+		'ul',
+		{ class: 'legenda' },
+		['a', 'ab', 'b'].map((r) =>
+			el(
+				'li',
+				{ class: ativos.includes(r) ? 'entra' : 'sai' },
+				el('span', { class: `amostra reg-${r}` }),
+				cfg.legenda[r],
+				el('span', { class: 'status' }, ativos.includes(r) ? 'entra' : 'fica de fora'),
+			),
+		),
+	);
+}
+
+/* =====================================================================
+ * Blocos de pagina
+ * ===================================================================== */
+function cabecalho(grupo, titulo, subtitulo, lead) {
+	return el(
+		'header',
+		{ class: 'pag-cab' },
+		el('div', { class: 'eyebrow' }, grupo),
+		el('h1', {}, titulo, subtitulo && el('span', { class: 'sub' }, subtitulo)),
+		lead && el('p', { class: 'lead' }, lead),
+	);
+}
+
+function pergunta(texto) {
+	return el('div', { class: 'pergunta' }, el('span', { class: 'rot' }, 'Pergunta de negócio'), el('p', {}, texto));
+}
+
+function nota(tipo, rotulo, conteudo, extra) {
+	return el(
+		'aside',
+		{ class: `nota ${tipo}` },
+		el('span', { class: 'rot' }, rotulo),
+		Array.isArray(conteudo) ? el('ul', {}, conteudo.map((item) => el('li', {}, item))) : el('p', {}, conteudo),
+		extra,
+	);
+}
+
+function secao(titulo, ajuda, ...filhos) {
+	return el('section', { class: 'secao' }, el('h2', {}, titulo), ajuda && el('p', { class: 'ajuda' }, ajuda), filhos);
+}
+
+function caixaErro(erro) {
+	return el(
+		'div',
+		{ class: 'falha-caixa' },
+		el('strong', {}, 'Não consegui carregar esta página.'),
+		el('p', {}, 'Confira se o backend está de pé e conectado ao banco (o indicador no topo mostra o estado).'),
+		el('pre', {}, erro?.message || String(erro)),
+	);
+}
+
+/* =====================================================================
+ * Pagina: modelagem
+ * ===================================================================== */
+const POSICOES_ER = {
+	clientes: [10, 10],
+	avaliacoes: [10, 222],
+	tickets: [300, 70],
+	atendentes: [590, 10],
+	tickets_tags: [590, 240],
+	tags: [880, 240],
+};
+
+async function paginaModelagem(corpo) {
+	const tabelas = await api('/api/tabelas');
+	const dados = Object.fromEntries(Object.entries(tabelas).map(([nome, t]) => [nome, t.dados]));
+	const registro = new Map();
+
+	corpo.append(
+		cabecalho(
+			'Modelagem',
+			'O modelo de dados',
+			'mini sistema de atendimento',
+			'Clientes abrem tickets. Atendentes cuidam dos tickets. O cliente pode avaliar o atendimento, e os tickets recebem tags para organizar a fila.',
+		),
+		el(
+			'div',
+			{ class: 'grade-3' },
+			nota('', 'Entidades → tabelas', ['Cada coisa do negócio que precisa ser lembrada vira uma tabela.', 'Cada característica dela vira uma coluna, com um tipo.']),
+			nota('', 'Identidade', ['Toda tabela tem uma PRIMARY KEY: o valor que identifica uma linha.', 'Aqui usamos um id numérico gerado pelo banco (SERIAL).']),
+			nota('', 'Relações', ['Uma FOREIGN KEY guarda a PK de outra tabela.', 'É ela que liga as tabelas e garante que a referência existe.']),
+		),
+		el('div', { class: 'cartao' }, desenharER(POSICOES_ER, 1110, 370), legendaER()),
+		secao(
+			'Os dados',
+			'Passe o mouse sobre uma linha para acender tudo o que está ligado a ela pelas chaves estrangeiras.',
+			el(
+				'div',
+				{ class: 'grade-dados passe-mouse' },
+				Object.entries(tabelas).map(([nome, t]) => {
+					const itens = [];
+					registro.set(nome, itens);
+					return el(
+						'div',
+						{ class: `cartao${nome === 'tickets' ? ' largo' : ''}` },
+						tituloTabela(nome, { qtd: t.dados.length, sql: t.sql }),
+						tabela(t.dados, { nome, colunas: MODELO[nome].map(([c]) => c), aoCriarLinha: (linha, tr) => itens.push({ linha, tr }) }),
+					);
+				}),
+			),
+		),
+	);
+	ligarPorFk(registro, dados, LIGACOES);
+}
+
+/* =====================================================================
+ * Paginas: relacoes
+ * ===================================================================== */
+const RELACOES = {
+	'um-para-muitos': {
+		titulo: '1:N',
+		subtitulo: 'um para muitos · clientes → tickets',
+		frase: 'Um cliente abre vários tickets. Cada ticket pertence a um único cliente.',
+		posicoes: { clientes: [10, 10], tickets: [300, 10] },
+		tamanho: [530, 210],
+		como: [
+			'A chave estrangeira fica sempre no lado N: é tickets.cliente_id que aponta para clientes.id.',
+			'NOT NULL na FK deixa a relação obrigatória: não existe ticket sem cliente.',
+			'atendentes → tickets também é 1:N, só que opcional: atendente_id aceita NULL, e o ticket fica na fila.',
+		],
+		cuidado:
+			'Por que não guardar os tickets numa coluna de clientes, tipo "1,6"? Porque o banco não consegue validar, indexar nem fazer JOIN com um texto. Uma coluna guarda um valor só (1ª forma normal).',
+		ddl: `CREATE TABLE clientes (
+  id    SERIAL PRIMARY KEY,
+  nome  TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE tickets (
+  id         SERIAL PRIMARY KEY,
+  titulo     TEXT NOT NULL,
+  cliente_id INT  NOT NULL REFERENCES clientes (id) ON DELETE RESTRICT
+);`,
+		prisma: `model Cliente {
+  id      Int      @id @default(autoincrement())
+  nome    String
+  email   String   @unique
+  tickets Ticket[] // lado 1: não vira coluna, existe só no código
+}
+
+model Ticket {
+  id        Int     @id @default(autoincrement())
+  titulo    String
+  clienteId Int     @map("cliente_id") // a FK de verdade
+  cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+}`,
+		tabelas: [
+			{ nome: 'clientes', colunas: ['id', 'nome', 'email'], destaque: ['id'] },
+			{ nome: 'tickets', colunas: ['id', 'titulo', 'cliente_id'], destaque: ['cliente_id'] },
+		],
+		grupos: [
+			{ rotulo: 'clientes', colunas: ['cliente_id', 'cliente'] },
+			{ rotulo: 'tickets', colunas: ['ticket_id', 'titulo'] },
+		],
+		repare: ['Fernanda, Gustavo e Helena aparecem duas vezes: uma linha para cada ticket.', 'Igor não aparece: ele não abriu nenhum ticket, e o JOIN só traz o que casa.'],
+	},
+	'um-para-um': {
+		titulo: '1:1',
+		subtitulo: 'um para um · tickets → avaliacoes',
+		frase: 'Um ticket tem no máximo uma avaliação. Cada avaliação é de um único ticket.',
+		posicoes: { tickets: [10, 10], avaliacoes: [300, 10] },
+		tamanho: [530, 210],
+		como: [
+			'É uma FK igual à da 1:N, com um UNIQUE a mais: avaliacoes.ticket_id não pode se repetir.',
+			'Sem o UNIQUE, um ticket poderia ter várias avaliações, e a relação viraria 1:N.',
+			'A FK fica do lado que depende do outro: ticket existe sem avaliação, avaliação não existe sem ticket.',
+		],
+		cuidado:
+			'Por que não colocar nota e comentario direto em tickets? Porque a maioria dos tickets não tem avaliação: seriam colunas quase sempre NULL. Outro uso comum de 1:1 é separar dados sensíveis, como usuarios e credenciais.',
+		ddl: `CREATE TABLE avaliacoes (
+  id         SERIAL PRIMARY KEY,
+  ticket_id  INT  NOT NULL UNIQUE REFERENCES tickets (id) ON DELETE CASCADE,
+  nota       INT  NOT NULL CHECK (nota BETWEEN 1 AND 5),
+  comentario TEXT
+);`,
+		prisma: `model Ticket {
+  id        Int        @id @default(autoincrement())
+  avaliacao Avaliacao? // no máximo uma
+}
+
+model Avaliacao {
+  id         Int     @id @default(autoincrement())
+  ticketId   Int     @unique @map("ticket_id") // o @unique faz ser 1:1
+  ticket     Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  nota       Int     // o CHECK fica na migration
+  comentario String?
+}`,
+		tabelas: [
+			{ nome: 'tickets', colunas: ['id', 'titulo', 'status'], destaque: ['id'] },
+			{ nome: 'avaliacoes', colunas: ['id', 'ticket_id', 'nota', 'comentario'], destaque: ['ticket_id'] },
+		],
+		grupos: [
+			{ rotulo: 'tickets', colunas: ['ticket_id', 'titulo'] },
+			{ rotulo: 'avaliacoes', colunas: ['avaliacao_id', 'nota', 'comentario'] },
+		],
+		repare: ['Cada ticket aparece no máximo uma vez: é o UNIQUE trabalhando.', 'O ticket 4 está fechado, mas não foi avaliado: do lado da avaliação a relação é 0..1.'],
+	},
+	'muitos-para-muitos': {
+		titulo: 'N:M',
+		subtitulo: 'muitos para muitos · tickets ↔ tags',
+		frase: 'Um ticket pode ter várias tags, e uma tag pode estar em vários tickets.',
+		posicoes: { tickets: [10, 10], tickets_tags: [300, 10], tags: [590, 10] },
+		tamanho: [820, 210],
+		como: [
+			'Não dá para resolver com uma FK só: em qual das duas tabelas ela ficaria? Uma coluna não guarda "vários".',
+			'A saída é uma tabela associativa, tickets_tags, com uma FK para cada lado. A N:M vira duas 1:N.',
+			'A PRIMARY KEY é composta, (ticket_id, tag_id): o mesmo par não aparece duas vezes.',
+		],
+		cuidado:
+			'O Prisma também aceita a forma implícita (Tag[] em Ticket e Ticket[] em Tag): ele cria a tabela sozinho, com colunas chamadas A e B. A forma explícita é mais clara e permite colunas extras, como a data em que a tag foi colocada.',
+		ddl: `CREATE TABLE tags (
+  id   SERIAL PRIMARY KEY,
+  nome TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE tickets_tags (
+  ticket_id INT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE,
+  tag_id    INT NOT NULL REFERENCES tags (id)    ON DELETE CASCADE,
+  PRIMARY KEY (ticket_id, tag_id)
+);`,
+		prisma: `model Tag {
+  id      Int         @id @default(autoincrement())
+  nome    String      @unique
+  tickets TicketTag[]
+}
+
+model TicketTag {
+  ticketId Int    @map("ticket_id")
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  tagId    Int    @map("tag_id")
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([ticketId, tagId]) // PK composta
+  @@map("tickets_tags")
+}`,
+		tabelas: [
+			{ nome: 'tickets', colunas: ['id', 'titulo'], destaque: ['id'] },
+			{ nome: 'tickets_tags', colunas: ['ticket_id', 'tag_id'], destaque: ['ticket_id', 'tag_id'] },
+			{ nome: 'tags', colunas: ['id', 'nome'], destaque: ['id'] },
+		],
+		grupos: [
+			{ rotulo: 'tickets', colunas: ['ticket_id', 'titulo'] },
+			{ rotulo: 'tags', colunas: ['tag_id', 'tag'] },
+		],
+		repare: ['A consulta passa pela tabela associativa: são dois JOINs.', 'A tag "sugestão" não aparece porque ninguém usou. Os tickets 4 e 7 também não, porque não têm tag.'],
+	},
+};
+
+async function paginaRelacao(chave, corpo) {
+	const cfg = RELACOES[chave];
+	const [tabelas, resultado] = await Promise.all([api('/api/tabelas'), api(`/api/relacoes/${chave}`)]);
+	const dados = Object.fromEntries(Object.entries(tabelas).map(([nome, t]) => [nome, t.dados]));
+	const registro = new Map();
+
+	corpo.append(
+		cabecalho('Relações', cfg.titulo, cfg.subtitulo, cfg.frase),
+		el('div', { class: 'cartao' }, desenharER(cfg.posicoes, ...cfg.tamanho)),
+		el('div', { class: 'cartao texto' }, el('h3', {}, 'Como se faz'), el('ul', { class: 'lista-como' }, cfg.como.map((item) => el('li', {}, item)))),
+		codigo(cfg.ddl, { titulo: 'No banco (SQL)' }),
+		codigo(cfg.prisma, { linguagem: 'prisma', titulo: 'No schema.prisma' }),
+		nota('dica', 'Pensando no modelo', cfg.cuidado),
+		secao(
+			'Os dados',
+			'Passe o mouse sobre uma linha para ver a quem ela está ligada.',
+			el(
+				'div',
+				{ class: `${cfg.tabelas.length === 3 ? 'grade-3' : 'grade-2'} passe-mouse` },
+				cfg.tabelas.map((t) => {
+					const itens = [];
+					registro.set(t.nome, itens);
+					return el(
+						'div',
+						{ class: 'cartao' },
+						tituloTabela(t.nome, { qtd: dados[t.nome].length }),
+						tabela(dados[t.nome], { nome: t.nome, colunas: t.colunas, destaque: t.destaque, aoCriarLinha: (linha, tr) => itens.push({ linha, tr }) }),
+					);
+				}),
+			),
+		),
+		secao(
+			'Juntando com JOIN',
+			'O JOIN segue a FK: liga cada linha à linha da outra tabela cuja PK é igual.',
+			codigo(resultado.sql, { grande: true }),
+			el('div', { class: 'resultado-cab' }, el('h2', {}, 'Resultado'), el('span', { class: 'qtd' }, `${resultado.dados.length} linhas`)),
+			tabela(resultado.dados, { grupos: cfg.grupos }),
+		),
+		nota('repare', 'Repare', cfg.repare),
+	);
+	ligarPorFk(registro, dados, LIGACOES);
+}
+
+/* =====================================================================
+ * Paginas: consultas
+ * ===================================================================== */
+const JUNCAO = {
+	A: { tabela: 'atendentes', colunas: ['id', 'nome'], chave: 'id', destaque: ['id'], resultado: 'atendente_id' },
+	B: { tabela: 'tickets', colunas: ['id', 'titulo', 'atendente_id'], chave: 'id', fk: 'atendente_id', destaque: ['atendente_id'], resultado: 'ticket_id' },
+	grupos: [
+		{ rotulo: 'A · atendentes', colunas: ['atendente_id', 'atendente'], classe: 'g-a' },
+		{ rotulo: 'B · tickets', colunas: ['ticket_id', 'titulo'], classe: 'g-b' },
+	],
+	legenda: { a: 'atendente sem ticket', ab: 'atendente com ticket (casou no ON)', b: 'ticket sem atendente (na fila)' },
+};
+
+const CONSULTAS = {
+	select: {
+		tipo: 'select',
+		titulo: 'SELECT',
+		subtitulo: 'lendo uma tabela',
+		endpoint: '/api/consultas/select',
+		pergunta: 'Quais tickets estão abertos, esperando atendimento?',
+		explicacao:
+			'SELECT escolhe as colunas, FROM diz de qual tabela, WHERE filtra as linhas e ORDER BY ordena. Toda consulta, por mais complexa que seja, é uma variação disso.',
+		A: { tabela: 'tickets', colunas: ['id', 'titulo', 'status', 'atendente_id', 'criado_em'], chave: 'id', destaque: ['status'], resultado: 'id' },
+		legenda: { a: "passa no WHERE (status = 'ABERTO')", fora: 'não passa no filtro' },
+		repare: [
+			'Só as linhas que passam no WHERE entram no resultado. As outras aparecem riscadas na tabela.',
+			'A coluna atendente_id não foi pedida no SELECT, então não aparece no resultado.',
+		],
+		dica: 'Sem ORDER BY, o banco não garante ordem nenhuma: a ordem que aparece é coincidência. Se a ordem importa, peça.',
+	},
+	'inner-join': {
+		tipo: 'inner',
+		titulo: 'INNER JOIN',
+		subtitulo: 'só o que casa dos dois lados',
+		endpoint: '/api/consultas/inner-join',
+		pergunta: 'Quais tickets já têm um atendente responsável, e quem é?',
+		explicacao:
+			'O JOIN combina cada linha de A com as linhas de B que satisfazem o ON. Aqui o ON é t.atendente_id = a.id: a FK encontrando a PK. Quem não tem par do outro lado fica de fora.',
+		...JUNCAO,
+		repare: [
+			'Ana aparece duas vezes: ela tem dois tickets, e o JOIN gera uma linha para cada par.',
+			'Diego e Eduarda somem porque não têm ticket. Os tickets 5, 6 e 7 também somem, porque não têm atendente.',
+			'O diagrama mostra quais linhas entram, não quantas vezes cada uma aparece.',
+		],
+		dica: 'JOIN sem nada na frente é INNER JOIN. As duas formas dão o mesmo resultado.',
+	},
+	'left-join': {
+		tipo: 'left',
+		titulo: 'LEFT JOIN',
+		subtitulo: 'tudo de A, e de B o que casar',
+		endpoint: '/api/consultas/left-join',
+		pergunta: 'Como está a carga de cada atendente, incluindo quem está sem nenhum ticket?',
+		explicacao:
+			'O LEFT JOIN mantém todas as linhas da tabela da esquerda (a do FROM). Quando uma linha de A não acha par em B, as colunas de B vêm preenchidas com NULL.',
+		...JUNCAO,
+		repare: ['Diego e Eduarda agora aparecem, com NULL nas colunas do ticket.', 'Os tickets da fila continuam de fora: eles só existem do lado B.'],
+		dica: 'Para achar só quem não tem par, filtre o NULL. É o jeito clássico de responder "quais atendentes estão sem ticket?":',
+		dicaSql: `SELECT a.id, a.nome
+FROM atendentes a
+LEFT JOIN tickets t ON t.atendente_id = a.id
+WHERE t.id IS NULL`,
+	},
+	'right-join': {
+		tipo: 'right',
+		titulo: 'RIGHT JOIN',
+		subtitulo: 'tudo de B, e de A o que casar',
+		endpoint: '/api/consultas/right-join',
+		pergunta: 'Liste todos os tickets com o atendente responsável, inclusive os que estão na fila.',
+		explicacao: 'É o espelho do LEFT: mantém todas as linhas da tabela da direita. Os tickets sem atendente vêm com NULL nas colunas de A.',
+		...JUNCAO,
+		repare: ['Os tickets 5, 6 e 7 aparecem com atendente NULL: estão na fila.', 'Diego e Eduarda saem de novo, porque agora quem manda é B.'],
+		dica: 'Todo RIGHT JOIN pode ser escrito como LEFT JOIN, trocando as tabelas de lugar (FROM tickets LEFT JOIN atendentes). Por isso, na prática, quase todo mundo usa só o LEFT.',
+	},
+	'full-outer-join': {
+		tipo: 'full',
+		titulo: 'FULL OUTER JOIN',
+		subtitulo: 'tudo dos dois lados',
+		endpoint: '/api/consultas/full-outer-join',
+		pergunta: 'Quero a visão completa: atendentes ociosos e tickets sem dono, tudo numa lista só.',
+		explicacao:
+			'O FULL OUTER JOIN mantém todas as linhas de A e de B. O que casou vem junto na mesma linha. O que não casou vem com NULL do lado que faltou.',
+		...JUNCAO,
+		repare: [
+			'Aparecem os pares, os atendentes sem ticket e os tickets sem atendente.',
+			'É como juntar o LEFT com o RIGHT, sem repetir os pares.',
+			'LEFT, RIGHT e FULL são os três tipos de OUTER JOIN. LEFT JOIN é apelido de LEFT OUTER JOIN.',
+		],
+		dica: 'O MySQL não tem FULL OUTER JOIN. Lá ele é feito juntando um LEFT JOIN e um RIGHT JOIN com UNION, que é o próximo assunto.',
+	},
+	union: {
+		tipo: 'union',
+		titulo: 'UNION',
+		subtitulo: 'empilhando resultados',
+		endpoint: '/api/consultas/union',
+		endpointAll: '/api/consultas/union-all',
+		pergunta: 'Vamos mandar um comunicado para todo mundo, clientes e atendentes. Qual é a lista de contatos?',
+		explicacao:
+			'O UNION junta o resultado de dois SELECTs, um embaixo do outro. Os dois precisam ter o mesmo número de colunas, na mesma ordem e com tipos compatíveis. O UNION remove as linhas repetidas; o UNION ALL mantém todas.',
+		A: { tabela: 'clientes', colunas: ['nome', 'email'], chave: 'email', destaque: [], resultado: 'email' },
+		B: { tabela: 'atendentes', colunas: ['nome', 'email'], chave: 'email', destaque: [], resultado: 'email' },
+		legenda: { a: 'só cliente', ab: 'cliente e atendente ao mesmo tempo', b: 'só atendente' },
+		repare: [
+			'Bruno Lima é atendente e também é cliente. Com UNION ele aparece uma vez; com UNION ALL, duas.',
+			'Para ser considerada repetida, a linha tem que ser igual em todas as colunas.',
+			'O UNION ALL é mais rápido: não precisa procurar repetidos.',
+		],
+		dica: 'JOIN junta colunas: o resultado cresce para o lado. UNION junta linhas: o resultado cresce para baixo.',
+	},
+};
+
+// Para cada linha (de A, de B ou do resultado), em qual regiao do Venn ela esta.
+function analisar(cfg, tabelas, resultado) {
+	const linhasA = tabelas[cfg.A.tabela].dados;
+	const linhasB = cfg.B ? tabelas[cfg.B.tabela].dados : [];
+	const dados = resultado.dados;
+
+	if (cfg.tipo === 'select') {
+		const entra = (la) => dados.some((r) => r[cfg.A.resultado] === la[cfg.A.chave]);
+		return {
+			regiaoA: (la) => (entra(la) ? 'reg-a' : 'reg-a fora'),
+			regiaoR: () => 'reg-a',
+			origem: (r) => ({ A: linhasA.find((la) => la[cfg.A.chave] === r[cfg.A.resultado]) }),
+		};
+	}
+
+	if (cfg.tipo === 'union') {
+		const emA = (email) => linhasA.some((la) => la.email === email);
+		const emB = (email) => linhasB.some((lb) => lb.email === email);
+		const regiao = (email) => (emA(email) && emB(email) ? 'reg-ab' : emA(email) ? 'reg-a' : 'reg-b');
+		return {
+			regiaoA: (la) => regiao(la.email),
+			regiaoB: (lb) => regiao(lb.email),
+			regiaoR: (r) => regiao(r.email),
+			origem: (r) => ({ A: linhasA.find((la) => la.email === r.email), B: linhasB.find((lb) => lb.email === r.email) }),
+		};
+	}
+
+	const { A, B } = cfg;
+	const casaA = (la) => linhasB.some((lb) => lb[B.fk] === la[A.chave]);
+	const casaB = (lb) => lb[B.fk] != null && linhasA.some((la) => la[A.chave] === lb[B.fk]);
+	const entraA = (la) => dados.some((r) => r[A.resultado] === la[A.chave]);
+	const entraB = (lb) => dados.some((r) => r[B.resultado] === lb[B.chave]);
+	return {
+		regiaoA: (la) => `${casaA(la) ? 'reg-ab' : 'reg-a'}${entraA(la) ? '' : ' fora'}`,
+		regiaoB: (lb) => `${casaB(lb) ? 'reg-ab' : 'reg-b'}${entraB(lb) ? '' : ' fora'}`,
+		regiaoR: (r) => (r[A.resultado] == null ? 'reg-b' : r[B.resultado] == null ? 'reg-a' : 'reg-ab'),
+		origem: (r) => ({
+			A: r[A.resultado] == null ? undefined : linhasA.find((la) => la[A.chave] === r[A.resultado]),
+			B: r[B.resultado] == null ? undefined : linhasB.find((lb) => lb[B.chave] === r[B.resultado]),
+		}),
+	};
+}
+
+async function paginaConsulta(chave, corpo) {
+	const cfg = CONSULTAS[chave];
+	const tabelas = await api('/api/tabelas');
+	let resultado = await api(cfg.endpoint);
+
+	const blocoSql = el('div');
+	const blocoResultado = el('div', { class: 'secao' });
+	const origemA = new Map();
+	const origemB = new Map();
+
+	function desenharResultado() {
+		const analise = analisar(cfg, tabelas, resultado);
+		blocoSql.replaceChildren(codigo(resultado.sql, { grande: true }));
+
+		// Recolore as tabelas de origem (o UNION ALL nao muda nada, os JOINs nao alternam)
+		for (const [linha, tr] of origemA) tr.className = analise.regiaoA(linha);
+		for (const [linha, tr] of origemB) tr.className = analise.regiaoB(linha);
+
+		const linhasResultado = [];
+		blocoResultado.replaceChildren(
+			el(
+				'div',
+				{ class: 'resultado-cab' },
+				el('h2', {}, 'Resultado'),
+				el('span', { class: 'qtd' }, `${resultado.dados.length} linhas`),
+				el('span', { class: 'ajuda' }, 'passe o mouse numa linha para ver de onde ela veio'),
+			),
+			tabela(resultado.dados, {
+				grupos: cfg.tipo === 'select' || cfg.tipo === 'union' ? null : cfg.grupos,
+				classeLinha: analise.regiaoR,
+				aoCriarLinha: (linha, tr) => linhasResultado.push([linha, tr]),
+			}),
+		);
+
+		for (const [linha, tr] of linhasResultado) {
+			tr.addEventListener('mouseenter', () => {
+				tr.classList.add('foco');
+				const { A, B } = analise.origem(linha);
+				if (A) origemA.get(A)?.classList.add('ligado');
+				if (B) origemB.get(B)?.classList.add('ligado');
+			});
+			tr.addEventListener('mouseleave', limparFoco);
+		}
+		const acenderResultado = (filtro) => () => linhasResultado.forEach(([linha, tr]) => filtro(linha) && tr.classList.add('ligado'));
+		for (const [linha, tr] of origemA) {
+			tr.onmouseenter = () => {
+				tr.classList.add('foco');
+				acenderResultado((r) => analise.origem(r).A === linha)();
+			};
+			tr.onmouseleave = limparFoco;
+		}
+		for (const [linha, tr] of origemB) {
+			tr.onmouseenter = () => {
+				tr.classList.add('foco');
+				acenderResultado((r) => analise.origem(r).B === linha)();
+			};
+			tr.onmouseleave = limparFoco;
+		}
+	}
+
+	const tabelaOrigem = (lado, def, mapa) =>
+		el(
+			'div',
+			{ class: 'cartao' },
+			tituloTabela(def.tabela, { papel: cfg.tipo === 'select' ? null : lado, qtd: tabelas[def.tabela].dados.length }),
+			tabela(tabelas[def.tabela].dados, { nome: def.tabela, colunas: def.colunas, destaque: def.destaque, aoCriarLinha: (linha, tr) => mapa.set(linha, tr) }),
+		);
+
+	let alternar = null;
+	if (cfg.endpointAll) {
+		const botoes = [
+			['UNION', cfg.endpoint],
+			['UNION ALL', cfg.endpointAll],
+		].map(([rotulo, endpoint], i) =>
+			el(
+				'button',
+				{
+					class: i === 0 ? 'ativo' : null,
+					onclick: async (ev) => {
+						resultado = await api(endpoint);
+						botoes.forEach((b) => b.classList.toggle('ativo', b === ev.currentTarget));
+						desenharResultado();
+					},
+				},
+				rotulo,
+			),
+		);
+		alternar = el('div', { class: 'alternar', role: 'group', 'aria-label': 'UNION ou UNION ALL' }, botoes);
+	}
+
+	corpo.append(
+		cabecalho('Consultas', cfg.titulo, cfg.subtitulo),
+		el(
+			'div',
+			{ class: 'consulta-topo' },
+			el('div', { class: 'cartao venn-caixa' }, venn(cfg.tipo, cfg.A.tabela, cfg.B?.tabela), legendaVenn(cfg)),
+			el('div', { class: 'consulta-explica' }, pergunta(cfg.pergunta), el('p', {}, cfg.explicacao), alternar, blocoSql),
+		),
+		secao(
+			'De onde vêm os dados',
+			cfg.tipo === 'select'
+				? 'A coluna do WHERE está destacada. As linhas riscadas não passam no filtro.'
+				: cfg.tipo === 'union'
+					? 'As duas tabelas têm colunas de mesmo nome e tipo, por isso dá para empilhar.'
+					: 'As colunas do ON estão destacadas. As linhas riscadas não entram no resultado.',
+			el('div', { class: cfg.B ? 'grade-2' : '' }, tabelaOrigem('A', cfg.A, origemA), cfg.B && tabelaOrigem('B', cfg.B, origemB)),
+		),
+		blocoResultado,
+		el('div', { class: 'grade-2' }, nota('repare', 'Repare', cfg.repare), nota('dica', 'Dica', cfg.dica, cfg.dicaSql && codigo(cfg.dicaSql))),
+	);
+	desenharResultado();
+}
+
+/* =====================================================================
+ * Pagina: constraints
+ * ===================================================================== */
+const ORDEM_TIPO = ['PRIMARY KEY', 'FOREIGN KEY', 'UNIQUE', 'CHECK', 'NOT NULL'];
+const CLASSE_TIPO = { 'PRIMARY KEY': 't-pk', 'FOREIGN KEY': 't-fk', UNIQUE: 't-uq', CHECK: 't-ck', 'NOT NULL': 't-nn' };
+const SQLSTATE = {
+	23502: 'not_null_violation',
+	23505: 'unique_violation',
+	23514: 'check_violation',
+	23503: 'foreign_key_violation',
+	23001: 'restrict_violation',
+	'22P02': 'invalid_text_representation',
+};
+
+const EXPERIMENTOS = [
+	{
+		grupo: 'Regras de coluna',
+		itens: [
+			{ id: 'default', espera: 'aceita', titulo: 'DEFAULT: o banco completa o que faltou', texto: 'O INSERT não informa status, atendente nem data. O banco usa o DEFAULT de cada coluna, ou NULL se a coluna aceitar.' },
+			{ id: 'not-null', espera: 'recusa', titulo: 'NOT NULL: campo obrigatório', texto: 'Todo cliente precisa de e-mail. Gravar NULL é recusado.' },
+			{ id: 'unique', espera: 'recusa', titulo: 'UNIQUE: sem repetição', texto: 'Já existe um cliente com fernanda@email.com.' },
+			{ id: 'check', espera: 'recusa', titulo: 'CHECK: regra de negócio no banco', texto: 'A nota vai de 1 a 5. Este CHECK foi escrito à mão na migration, porque o Prisma não gera CHECK.' },
+			{ id: 'enum', espera: 'recusa', titulo: 'ENUM: só valores da lista', texto: 'status é do tipo status_ticket, que só aceita ABERTO, EM_ANDAMENTO ou FECHADO.' },
+		],
+	},
+	{
+		grupo: 'Regras de relação',
+		itens: [
+			{ id: 'foreign-key', espera: 'recusa', titulo: 'FOREIGN KEY: não aponta para o vazio', texto: 'Não existe cliente 999. A FK impede que nasça um ticket órfão.' },
+			{ id: 'um-para-um', espera: 'recusa', titulo: 'UNIQUE na FK: é isso que faz a 1:1', texto: 'O ticket 1 já tem avaliação. O UNIQUE em avaliacoes.ticket_id recusa a segunda.' },
+			{ id: 'muitos-para-muitos', espera: 'recusa', titulo: 'PK composta: o mesmo par não se repete', texto: 'O ticket 1 já tem a tag 1 (urgente).' },
+		],
+	},
+	{
+		grupo: 'O que acontece ao apagar (ON DELETE)',
+		itens: [
+			{ id: 'restrict', espera: 'recusa', titulo: 'RESTRICT: não deixa apagar', texto: 'Fernanda (cliente 1) tem tickets. Apagar o cadastro deixaria tickets sem dono, então o banco recusa.' },
+			{ id: 'set-null', espera: 'aceita', titulo: 'SET NULL: solta a referência', texto: 'Apagar Ana (atendente 1) não apaga os tickets que eram dela: eles voltam para a fila, com atendente_id NULL.' },
+			{ id: 'cascade', espera: 'aceita', titulo: 'CASCADE: apaga junto', texto: 'Apagar o ticket 1 apaga também a avaliação e as tags dele. Sem o ticket, elas não fazem sentido.' },
+		],
+	},
+];
+
+function cartaoCatalogo(nome, linhas) {
+	const naoNulas = linhas.filter((l) => l.tipo === 'NOT NULL').map((l) => l.definicao.replace(/^NOT NULL\s+/, ''));
+	const outras = linhas.filter((l) => l.tipo !== 'NOT NULL').sort((a, b) => ORDEM_TIPO.indexOf(a.tipo) - ORDEM_TIPO.indexOf(b.tipo));
+	return el(
+		'div',
+		{ class: 'cartao' },
+		el('h3', { class: 'mono' }, nome),
+		el(
+			'ul',
+			{ class: 'catalogo' },
+			outras.map((l) => el('li', {}, el('span', { class: `tipo ${CLASSE_TIPO[l.tipo]}` }, l.tipo), el('span', { class: 'def' }, l.definicao), el('span', { class: 'nome' }, l.nome))),
+			naoNulas.length && el('li', {}, el('span', { class: 'tipo t-nn' }, 'NOT NULL'), el('span', { class: 'def' }, naoNulas.join(', '))),
+		),
+	);
+}
+
+function cartaoExperimento(def, sqlDoBackend) {
+	const saida = el('div', { class: 'exp-saida', 'aria-live': 'polite' });
+	const botao = el('button', { class: 'botao' }, 'Executar');
+
+	botao.addEventListener('click', async () => {
+		botao.disabled = true;
+		try {
+			const r = await api(`/api/constraints/experimentos/${def.id}`, { method: 'POST' });
+			saida.replaceChildren(...resultadoExperimento(r));
+		} catch (erro) {
+			saida.replaceChildren(caixaErro(erro));
+		} finally {
+			botao.disabled = false;
+		}
+	});
+
+	return el(
+		'article',
+		{ class: `cartao exp${sqlDoBackend?.verificacoes.length ? ' largo' : ''}` },
+		el('header', {}, el('h3', {}, def.titulo), el('span', { class: `espera ${def.espera}` }, def.espera === 'aceita' ? 'esperado: aceita' : 'esperado: recusa')),
+		el('p', {}, def.texto),
+		codigo(sqlDoBackend?.comando || '-- experimento nao encontrado no backend'),
+		sqlDoBackend?.verificacoes.length ? el('p', { class: 'mini' }, 'Para mostrar o efeito, roda antes e depois:') : null,
+		(sqlDoBackend?.verificacoes || []).map((sql) => codigo(sql)),
+		botao,
+		saida,
+	);
+}
+
+function resultadoExperimento(r) {
+	const partes = [];
+	if (r.aceito) {
+		partes.push(el('div', { class: 'veredito ok' }, '✔ O banco aceitou'));
+		if (r.retorno.length) partes.push(el('p', { class: 'mini' }, 'Linha afetada (RETURNING *):'), tabela(r.retorno));
+		for (const v of r.verificacoes) {
+			const colunas = Object.keys(v.antes[0] || v.depois[0] || {});
+			partes.push(
+				el(
+					'div',
+					{ class: 'antes-depois' },
+					el('div', {}, el('div', { class: 'rot' }, 'Antes'), tabela(v.antes, { colunas })),
+					el('div', {}, el('div', { class: 'rot' }, 'Depois'), tabela(v.depois, { colunas })),
+				),
+			);
+		}
+	} else {
+		const e = r.erro;
+		partes.push(
+			el('div', { class: 'veredito erro' }, '✖ O banco recusou'),
+			el(
+				'dl',
+				{ class: 'erro-pg' },
+				el('dt', {}, 'SQLSTATE'),
+				el('dd', {}, e.codigo ? `${e.codigo}${SQLSTATE[e.codigo] ? ` (${SQLSTATE[e.codigo]})` : ''}` : '—'),
+				e.constraint && [el('dt', {}, 'constraint'), el('dd', {}, e.constraint)],
+				el('dt', {}, 'mensagem'),
+				el('dd', {}, e.mensagem),
+				e.detalhe && [el('dt', {}, 'detalhe'), el('dd', {}, e.detalhe)],
+			),
+		);
+	}
+	partes.push(el('p', { class: 'rollback' }, 'Rodou dentro de uma transação que terminou em ROLLBACK: nada foi gravado de verdade.'));
+	return partes;
+}
+
+async function paginaConstraints(corpo) {
+	const [catalogo, experimentos] = await Promise.all([api('/api/constraints'), api('/api/constraints/experimentos')]);
+	const porTabela = new Map();
+	for (const linha of catalogo.dados) {
+		if (!porTabela.has(linha.tabela)) porTabela.set(linha.tabela, []);
+		porTabela.get(linha.tabela).push(linha);
+	}
+	const sqlPorId = Object.fromEntries(experimentos.map((e) => [e.id, e]));
+
+	corpo.append(
+		cabecalho(
+			'Constraints',
+			'Regras do banco',
+			'o banco se protege',
+			'Constraints são regras que o próprio banco garante. Não importa se o dado vem do backend, de um script ou de alguém no psql: o que viola a regra não entra.',
+		),
+		secao(
+			'O que o banco garante',
+			'Lido do catálogo do próprio Postgres (pg_constraint). O Prisma cria UNIQUE como índice único, por isso a consulta também olha pg_index.',
+			el('div', { class: 'grade-auto' }, [...porTabela].map(([nome, linhas]) => cartaoCatalogo(nome, linhas))),
+			el('details', { class: 'ver-sql' }, el('summary', {}, 'ver o SQL que lê o catálogo'), codigo(catalogo.sql)),
+		),
+		...EXPERIMENTOS.map((g) =>
+			secao(
+				g.grupo,
+				null,
+				el(
+					'div',
+					{ class: 'grade-dados' },
+					g.itens.map((def) => cartaoExperimento(def, sqlPorId[def.id])),
+				),
+			),
+		),
+	);
+}
+
+/* =====================================================================
+ * Pagina: Prisma
+ * ===================================================================== */
+const CODIGO_ORM = `// src/api/rest/tickets/tickets.repository.ts
+findById(id: number) {
+  return this.databaseService.ticket.findUnique({
+    where: { id },
+    include: {
+      cliente: true,                    // 1:N
+      atendente: true,                  // 1:N opcional
+      avaliacao: true,                  // 1:1
+      tags: { include: { tag: true } }, // N:M
+    },
+  });
+}`;
+
+async function paginaPrisma(corpo) {
+	const tabelas = await api('/api/tabelas');
+	const saida = el('div', { class: 'json' });
+	const botoes = tabelas.tickets.dados.map((t) => el('button', { class: 'botao sec', 'data-id': t.id }, `ticket ${t.id}`));
+
+	async function mostrar(id) {
+		botoes.forEach((b) => b.classList.toggle('ativo', b.dataset.id === String(id)));
+		try {
+			const r = await api(`/api/tickets/${id}`);
+			saida.replaceChildren(codigo(r, { linguagem: 'json', titulo: `GET /api/tickets/${id}` }));
+		} catch (erro) {
+			saida.replaceChildren(caixaErro(erro));
+		}
+	}
+	botoes.forEach((b) => b.addEventListener('click', () => mostrar(b.dataset.id)));
+
+	corpo.append(
+		cabecalho(
+			'No código',
+			'O mesmo dado pelo Prisma',
+			'ORM',
+			'No dia a dia, boa parte das consultas sai pelo ORM. Ele lê as relações declaradas no schema.prisma e busca os dados ligados sem você escrever SQL.',
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			el(
+				'div',
+				{ class: 'secao' },
+				codigo(CODIGO_ORM, { linguagem: 'ts', titulo: 'Buscando um ticket com tudo ligado a ele' }),
+				nota('repare', 'Repare', [
+					'No SQL o resultado é uma tabela plana: uma linha para cada tag. No ORM é um objeto aninhado.',
+					'O include só funciona porque as relações estão declaradas no schema.prisma: a modelagem vem primeiro.',
+					'atendente e avaliacao podem vir null: são as relações opcionais do modelo.',
+				]),
+				nota(
+					'dica',
+					'Olhe o SQL que o Prisma gerou',
+					'Rode docker compose logs -f backend e clique num ticket. O Prisma não faz um JOIN: ele manda um SELECT por relação e monta o objeto em memória. Quem sabe SQL consegue perceber isso, e decidir quando vale escrever a consulta à mão.',
+				),
+			),
+			el('div', { class: 'secao' }, el('div', { class: 'botoes' }, botoes), saida),
+		),
+	);
+	if (botoes.length) await mostrar(botoes[0].dataset.id);
+}
+
+/* =====================================================================
+ * Roteiro (ordem da aula), menu e navegacao
+ * ===================================================================== */
+const PAGINAS = [
+	{ rota: 'modelagem', grupo: 'Modelagem', menu: 'Diagrama e tabelas', render: paginaModelagem },
+	{ rota: 'relacoes/um-para-muitos', grupo: 'Relações', menu: '1:N  clientes → tickets', render: (c) => paginaRelacao('um-para-muitos', c) },
+	{ rota: 'relacoes/um-para-um', grupo: 'Relações', menu: '1:1  tickets → avaliacoes', render: (c) => paginaRelacao('um-para-um', c) },
+	{ rota: 'relacoes/muitos-para-muitos', grupo: 'Relações', menu: 'N:M  tickets ↔ tags', render: (c) => paginaRelacao('muitos-para-muitos', c) },
+	{ rota: 'constraints', grupo: 'Constraints', menu: 'Regras do banco', render: paginaConstraints },
+	...Object.entries(CONSULTAS).map(([chave, cfg]) => ({ rota: `consultas/${chave}`, grupo: 'Consultas', menu: cfg.titulo, render: (c) => paginaConsulta(chave, c) })),
+	{ rota: 'prisma', grupo: 'No código', menu: 'O mesmo dado pelo Prisma', render: paginaPrisma },
+];
+
+function montarMenu() {
+	const menu = document.getElementById('menu');
+	let grupoAtual = null;
+	PAGINAS.forEach((p, i) => {
+		if (p.grupo !== grupoAtual) {
+			grupoAtual = p.grupo;
+			menu.append(el('h4', {}, p.grupo));
+		}
+		menu.append(el('a', { href: `#/${p.rota}`, 'data-rota': p.rota }, el('span', { class: 'num' }, i + 1), p.menu));
+	});
+}
+
+function indiceAtual() {
+	const rota = location.hash.replace(/^#\/?/, '');
+	return Math.max(0, PAGINAS.findIndex((p) => p.rota === rota));
+}
+
+function rodape(i) {
+	const anterior = PAGINAS[i - 1];
+	const proxima = PAGINAS[i + 1];
+	return el(
+		'nav',
+		{ class: 'rodape', 'aria-label': 'Navegação entre páginas' },
+		anterior ? el('a', { class: 'ant', href: `#/${anterior.rota}` }, `← ${anterior.menu}`) : el('span'),
+		el('span', { class: 'pos' }, `${i + 1} / ${PAGINAS.length}`),
+		proxima ? el('a', { class: 'prox', href: `#/${proxima.rota}` }, `${proxima.menu} →`) : el('span'),
+	);
+}
+
+let versaoRender = 0;
+async function navegar() {
+	const i = indiceAtual();
+	const pagina = PAGINAS[i];
+	const versao = ++versaoRender;
+	document.querySelectorAll('#menu a').forEach((a) => a.classList.toggle('ativo', a.dataset.rota === pagina.rota));
+	document.querySelector('#menu a.ativo')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+
+	const conteudo = document.getElementById('conteudo');
+	const corpo = el('div', { class: 'pagina' });
+	try {
+		await pagina.render(corpo);
+	} catch (erro) {
+		corpo.replaceChildren(caixaErro(erro));
+	}
+	if (versao !== versaoRender) return;
+	conteudo.replaceChildren(corpo, rodape(i));
+	window.scrollTo(0, 0);
+}
+
+function irPara(passo) {
+	const destino = PAGINAS[indiceAtual() + passo];
+	if (destino) location.hash = `#/${destino.rota}`;
+}
+
+/* =====================================================================
+ * Topo: estado do banco, tema e menu
+ * ===================================================================== */
+async function verificarBanco() {
+	const selo = document.getElementById('saude');
+	try {
+		const r = await fetch('/health-check').then((x) => x.json());
+		if (r.banco !== 'ok') throw new Error(r.motivo || 'banco indisponível');
+		selo.className = 'saude ok';
+		selo.textContent = `PostgreSQL ${r.versao.split(' ')[0]} · ${r.host}`;
+		selo.title = 'O backend está conectado ao banco';
+	} catch (erro) {
+		selo.className = 'saude falha';
+		selo.textContent = 'banco indisponível';
+		selo.title = erro.message;
+	}
+}
+
+function lerPreferencia(chave) {
+	try {
+		return localStorage.getItem(chave);
+	} catch {
+		return null;
+	}
+}
+
+function gravarPreferencia(chave, valor) {
+	try {
+		localStorage.setItem(chave, valor);
+	} catch {}
+}
+
+function alternarMenu() {
+	document.body.classList.toggle('sem-menu');
+	gravarPreferencia('menu', document.body.classList.contains('sem-menu') ? 'oculto' : 'visivel');
+}
+
+function alternarTema() {
+	const raiz = document.documentElement;
+	const escuroAgora = raiz.dataset.theme ? raiz.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+	raiz.dataset.theme = escuroAgora ? 'light' : 'dark';
+	gravarPreferencia('tema', raiz.dataset.theme);
+}
+
+const temaSalvo = lerPreferencia('tema');
+if (temaSalvo) document.documentElement.dataset.theme = temaSalvo;
+if (lerPreferencia('menu') === 'oculto') document.body.classList.add('sem-menu');
+
+document.getElementById('btn-menu').addEventListener('click', alternarMenu);
+document.getElementById('btn-tema').addEventListener('click', alternarTema);
+
+// Setas e PageUp/PageDown (passador de slides) andam pelo roteiro; M esconde o menu.
+document.addEventListener('keydown', (ev) => {
+	if (ev.altKey || ev.ctrlKey || ev.metaKey || ev.target.closest?.('input, textarea, select')) return;
+	if (ev.key === 'ArrowRight' || ev.key === 'PageDown') irPara(1);
+	else if (ev.key === 'ArrowLeft' || ev.key === 'PageUp') irPara(-1);
+	else if (ev.key === 'm' || ev.key === 'M') alternarMenu();
+	else return;
+	ev.preventDefault();
+});
+
+window.addEventListener('hashchange', navegar);
+montarMenu();
+navegar();
+verificarBanco();
+setInterval(verificarBanco, 60000);
+</script>
 </body>
 </html>

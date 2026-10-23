@@ -1,17 +1,33 @@
 {
-  "name": "aula-backend",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "node server.js",
-    "migrate": "node migrate.js"
-  },
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
-    "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.3",
-    "pg": "^8.13.1"
-  }
+	"name": "aula-modelagem-backend",
+	"version": "1.0.0",
+	"private": true,
+	"scripts": {
+		"build": "nest build",
+		"start:dev": "nest start --watch",
+		"start:prod": "node dist/main",
+		"generate": "prisma generate",
+		"migrate": "prisma migrate deploy",
+		"seed": "prisma db seed",
+		"seed:reset": "prisma db seed -- --reset"
+	},
+	"dependencies": {
+		"@nestjs/common": "12.2.0",
+		"@nestjs/core": "12.2.0",
+		"@nestjs/platform-express": "12.2.0",
+		"@prisma/adapter-pg": "7.10.1",
+		"@prisma/client": "7.10.1",
+		"dotenv": "18.0.8",
+		"reflect-metadata": "0.2.2",
+		"rxjs": "7.8.2"
+	},
+	"devDependencies": {
+		"@nestjs/cli": "12.0.10",
+		"@nestjs/schematics": "12.0.10",
+		"@types/express": "5.0.6",
+		"@types/node": "26.6.5",
+		"prisma": "7.10.1",
+		"tsx": "4.23.15",
+		"typescript": "6.0.3"
+	}
 }

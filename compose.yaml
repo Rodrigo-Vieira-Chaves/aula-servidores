@@ -1,31 +1,51 @@
+# Tudo num servidor so:
+#   docker compose up -d --build
+#
+# Banco num servidor e backend em outro:
+#   no servidor do banco:   docker compose up -d banco
+#   no servidor do backend: DB_HOST=<ip privado do banco> docker compose up -d --build --no-deps backend
+
 services:
+  banco:
+    image: postgres:18
+    container_name: banco
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-app}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aula123}
+      POSTGRES_DB: ${DB_NAME:-aula}
+    ports:
+      - "${BANCO_PORTA:-5432}:5432"
+    volumes:
+      # A partir do Postgres 18 o volume e montado em /var/lib/postgresql (nao mais em .../data).
+      - dados-banco:/var/lib/postgresql
+    healthcheck:
+      # -h 127.0.0.1: durante a inicializacao o Postgres so atende pelo socket local.
+      # Testando por TCP, o "pronto" so vem quando ele aceita conexao de fora.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     container_name: backend
     restart: unless-stopped
+    depends_on:
+      banco:
+        condition: service_healthy
     ports:
-      - "3000:3000"
+      - "${PORTA:-3000}:3000"
     environment:
-      DB_HOST: ${DB_HOST:-host.docker.internal}
-      DB_PORT: ${DB_PORT:-5432}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      DB_NAME: ${DB_NAME:-aula}
-      NOME_SERVIDOR: ${NOME_SERVIDOR:-}
-      ORIGENS_PERMITIDAS: ${ORIGENS_PERMITIDAS:-}
-      # Precisa ser IDENTICO nos dois backends: e a chave que assina a sessao.
-      JWT_SEGREDO: ${JWT_SEGREDO:-}
-      COOKIE_SEGURO: ${COOKIE_SEGURO:-true}
-      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-Lax}
-      COOKIE_DOMINIO: ${COOKIE_DOMINIO:-}
-      USUARIO_DEMO: ${USUARIO_DEMO:-aluno}
-      SENHA_DEMO: ${SENHA_DEMO:-aula123}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      DATABASE_URL: postgresql://${DB_USER:-app}:${DB_PASSWORD:-aula123}@${DB_HOST:-banco}:${DB_PORT:-5432}/${DB_NAME:-aula}
+      LOG_SQL: ${LOG_SQL:-true}
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 10s
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health-check').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
       timeout: 5s
       retries: 5
+
+volumes:
+  dados-banco:

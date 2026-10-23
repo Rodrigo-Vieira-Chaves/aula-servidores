@@ -1,159 +1,179 @@
-# Aula: Servidores
+# Aula: Modelagem de dados com PostgreSQL
 
-Mini sistema usado para demonstrar, na prática, uma arquitetura com servidores separados:
-banco de dados, dois backends e um frontend com Nginx fazendo proxy reverso e load balancing.
+Um mini sistema de atendimento, feito para explicar **modelagem de tabelas e relações** na
+prática. Clientes abrem tickets, atendentes cuidam deles, o cliente avalia o atendimento e os
+tickets recebem tags.
+
+O modelo foi montado para ter um exemplo de cada coisa:
 
 ```
-Internet
-   |  :80
-[ Frontend + Nginx ]
-   |  proxy /api -> upstream
-   +--------------+
-   |              |
-[ Backend 1 ]  [ Backend 2 ]
-   +------+-------+
-          |  :5432
-   [ Banco de dados ]
+clientes 1 ──── N tickets N ──── 0..1 atendentes
+                    1
+                    │
+                  0..1
+                avaliacoes
+
+tickets 1 ──── N tickets_tags N ──── 1 tags         (N:M pela tabela associativa)
 ```
 
-## O que é
+| Conceito | Onde aparece |
+|---|---|
+| **1:N** | `clientes` → `tickets` (obrigatória) e `atendentes` → `tickets` (opcional) |
+| **1:1** | `tickets` → `avaliacoes`: FK com `UNIQUE` |
+| **N:M** | `tickets` ↔ `tags`, pela tabela associativa `tickets_tags` com PK composta |
+| **Constraints** | `PRIMARY KEY`, `FOREIGN KEY`, `UNIQUE`, `NOT NULL`, `CHECK`, `DEFAULT`, `ENUM` |
+| **ON DELETE** | `RESTRICT` (clientes), `SET NULL` (atendentes), `CASCADE` (avaliações e tags) |
+| **Consultas** | `SELECT`, `INNER JOIN`, `LEFT JOIN`, `RIGHT JOIN`, `FULL OUTER JOIN`, `UNION` / `UNION ALL` |
 
-- **Backend** — Node + Express, busca de nomes protegida por login. A resposta inclui o campo
-  `servidor`, que identifica qual máquina respondeu (é o que torna o load balancing visível).
-- **Frontend** — HTML estático com tela de login e um campo de busca. Chama a API em caminho
-  relativo por padrão, então funciona tanto servido pelo backend (dev) quanto pelo Nginx.
-- **Banco** — PostgreSQL 18 com as tabelas `pessoas` e `usuarios`.
+O frontend mostra cada consulta com o diagrama de Venn, as tabelas de origem coloridas (o que
+casou, o que ficou de fora) e o resultado. O roteiro da aula está em [ROTEIRO.md](ROTEIRO.md).
 
-A sessão é um **JWT dentro de um cookie HttpOnly**. Como o token é assinado e não guardado em
-lugar nenhum, qualquer um dos backends valida a sessão dos outros — desde que todos usem o
-**mesmo `JWT_SEGREDO`**. É o que mantém o backend descartável mesmo com login.
+## Stack
+
+- **Backend**: NestJS + Prisma 7 (`@prisma/adapter-pg`), na mesma estrutura de um backend de
+  produção: `core/database`, `api/rest/<recurso>`, `prisma/schema.prisma`, migrations e seed.
+- **Banco**: PostgreSQL 18.
+- **Frontend**: um único HTML estático, servido pelo próprio backend.
+- **Infra**: Docker Compose com dois serviços, `banco` e `backend`.
+
+```
+backend/
+  prisma/
+    schema.prisma          <- o modelo de dados (comece por aqui)
+    migrations/            <- o SQL que cria as tabelas (gerado pelo Prisma + o CHECK escrito à mão)
+    seed.ts                <- os dados da aula
+  src/
+    core/database/         <- DatabaseService: o PrismaClient
+    api/rest/consultas/    <- SELECT, JOINs e UNION, em SQL puro
+    api/rest/relacoes/     <- uma consulta por tipo de relação
+    api/rest/constraints/  <- catálogo de constraints e os experimentos
+    api/rest/tickets/      <- o mesmo dado pelo ORM, com include
+    api/rest/tabelas/      <- SELECT * de cada tabela
+frontend/index.html
+compose.yaml
+```
 
 ## Rodando local
 
-Requer Docker e um PostgreSQL acessível.
+Requer Docker.
 
 ```bash
 docker compose up -d --build
-docker compose exec backend node migrate.js
 ```
 
-Abra http://localhost:3000
+Abra http://localhost:3000. Ao subir, o backend aplica as migrations e roda o seed. O seed só
+insere dados se o banco estiver vazio, então reiniciar não duplica nada.
 
-## Rodando em um servidor
+Na tela, as setas `←` `→` (ou PageUp e PageDown de um passador de slides) andam pelo roteiro, e a
+tecla `M` esconde o menu lateral.
+
+### Sem Docker (para mexer no código)
+
+Com um Postgres rodando (pode ser só o `docker compose up -d banco`):
+
+```bash
+cd backend
+cp .env.example .env
+npm install
+npm run generate     # gera o client do Prisma em src/generated
+npm run migrate      # cria as tabelas
+npm run seed         # popula
+npm run start:dev    # http://localhost:3000
+```
+
+## Rodando na AWS
+
+### Tudo num servidor
 
 ```bash
 git clone https://github.com/Rodrigo-Vieira-Chaves/aula-servidores.git
 cd aula-servidores
-
-DB_HOST=172.31.5.69 \
-DB_PASSWORD=aula123 \
-DB_USER=app \
-DB_NAME=aula \
-NOME_SERVIDOR=Server1 \
-JWT_SEGREDO=troque-isso-e-repita-igual-no-server2 \
 docker compose up -d --build
-
-docker compose exec backend node migrate.js
 ```
 
-`DB_HOST` é o **IP privado** da instância do banco. `NOME_SERVIDOR` é o rótulo que aparece
-no frontend — use `Server1` e `Server2` para que a alternância fique óbvia na tela.
+No Security Group, libere a porta **3000** para acessar a aplicação. A 5432 só precisa ser
+liberada se você quiser conectar no banco de fora (DBeaver, por exemplo), e nesse caso
+**somente para o seu IP**.
 
-A migration só precisa rodar uma vez, a partir de qualquer um dos backends: o banco é
-compartilhado. Rodar de novo é seguro, o seed é ignorado se a tabela já tiver dados.
+### Banco num servidor, backend em outro
 
-## Servidor de frontend (Nginx)
-
-Na instância do frontend, clone o repositório e crie o `.env`:
+No servidor do banco:
 
 ```bash
-cat > .env <<'EOF'
-BACKEND1=172.31.1.179:3000
-BACKEND2=172.31.x.x:3000
-DOMINIO=rodrigovieirachaves.com
-EOF
-
-docker compose -f compose.frontend.yaml up -d --build
+docker compose up -d banco
 ```
 
-Use os **IPs privados** dos backends. Se ainda houver só um backend, omita `BACKEND2` que
-ele assume o mesmo valor de `BACKEND1`.
-
-O Nginx serve os arquivos de `frontend/` e faz proxy de `/api/` para os backends em
-round-robin. A resposta traz o header `X-Backend` com o endereço de quem respondeu.
-
-### TLS na origem
-
-O Nginx escuta em **80 e 443**. Isso é obrigatório quando o Cloudflare está em modo
-**Full** ou **Full (strict)**: nesses modos ele conecta na 443 da origem, e sem ninguém
-escutando lá a resposta é **erro 521**.
-
-Na primeira subida, o container **gera um certificado autoassinado** em `nginx/certs/` —
-suficiente para o modo `Full`, que exige TLS mas não valida quem assinou. O certificado
-fica salvo e é reaproveitado nos restarts seguintes.
-
-Para subir de `Full` para `Full (strict)`, gere um **Origin Certificate** no painel do
-Cloudflare (SSL/TLS → Origin Server) e salve os dois arquivos por cima:
+No servidor do backend:
 
 ```bash
-nginx/certs/origin.crt
-nginx/certs/origin.key
-
-docker compose -f compose.frontend.yaml restart
+DB_HOST=172.31.x.x docker compose up -d --build --no-deps backend
 ```
 
-O script detecta que já existe certificado e usa o seu, sem gerar nada.
+`DB_HOST` é o **IP privado** do servidor do banco. O `--no-deps` impede que o compose suba um
+segundo banco na máquina do backend. No Security Group do banco, libere a 5432 apenas para o
+Security Group do backend.
 
-Para recarregar a configuração após editar o template:
+Para trocar a senha, crie um `.env` ao lado do `compose.yaml` (vale nos dois servidores):
 
 ```bash
-docker compose -f compose.frontend.yaml up -d --force-recreate
+DB_PASSWORD=uma-senha-de-verdade
 ```
-
-## Domínio, HTTPS e CORS
-
-Com o domínio apontado no Cloudflare, o navegador acessa a aplicação por HTTPS. Duas coisas
-mudam em relação ao setup só com IP:
-
-- **CORS** — se o frontend e a API ficarem em origens diferentes (por exemplo
-  `rodrigovieirachaves.com` e `api.rodrigovieirachaves.com`), o backend precisa autorizar a
-  origem do frontend em `ORIGENS_PERMITIDAS`. Se tudo passa pelo mesmo Nginx em caminho
-  relativo, CORS nem aparece.
-- **Cookie** — em HTTPS o cookie vai com `Secure`, e o frontend precisa mandar
-  `credentials: 'include'` no `fetch`. Com `credentials`, o navegador **recusa**
-  `Access-Control-Allow-Origin: *`: a origem tem que vir escrita por extenso.
-
-`SameSite=Lax` (o padrão) já basta quando front e API estão no mesmo domínio ou em subdomínios
-dele. Só use `COOKIE_SAMESITE=None` se forem domínios realmente diferentes — e nesse caso
-`Secure` é obrigatório.
 
 ## Variáveis de ambiente
 
+Todas são opcionais e lidas pelo `compose.yaml`.
+
 | Variável | Padrão | Para que serve |
 |---|---|---|
-| `DB_HOST` | `host.docker.internal` | endereço do PostgreSQL |
-| `DB_PORT` | `5432` | porta do PostgreSQL |
-| `DB_USER` | `postgres` | usuário |
-| `DB_PASSWORD` | `postgres` | senha |
-| `DB_NAME` | `aula` | banco |
-| `NOME_SERVIDOR` | hostname do container | rótulo exibido no frontend |
-| `PORT` | `3000` | porta do backend |
-| `ORIGENS_PERMITIDAS` | domínio da aula | origens liberadas no CORS, separadas por vírgula |
-| `JWT_SEGREDO` | segredo de aula | chave que assina a sessão — **igual nos dois backends** |
-| `JWT_VALIDADE_SEGUNDOS` | `28800` | validade da sessão (8 h) |
-| `COOKIE_SEGURO` | `true` | `Secure` no cookie; use `false` só em HTTP local |
-| `COOKIE_SAMESITE` | `lax` | `lax`, `strict` ou `none` |
-| `COOKIE_DOMINIO` | vazio | `Domain` do cookie, para compartilhar entre subdomínios |
-| `USUARIO_DEMO` | `aluno` | usuário criado pela migration |
-| `SENHA_DEMO` | `aula123` | senha desse usuário (guardada com hash bcrypt) |
+| `DB_HOST` | `banco` | onde está o Postgres (o nome do serviço, ou o IP privado de outro servidor) |
+| `DB_PORT` | `5432` | porta do Postgres |
+| `DB_USER` | `app` | usuário |
+| `DB_PASSWORD` | `aula123` | senha |
+| `DB_NAME` | `aula` | nome do banco |
+| `PORTA` | `3000` | porta publicada do backend |
+| `BANCO_PORTA` | `5432` | porta publicada do Postgres |
+| `LOG_SQL` | `true` | imprime no log todo SQL enviado ao banco, inclusive o que o Prisma gera |
+
+O backend em si só lê `DATABASE_URL`, `HTTP_PORT` e `LOG_SQL`. Quem monta a `DATABASE_URL` a
+partir das variáveis acima é o compose.
+
+## Comandos úteis
+
+```bash
+docker compose ps                                   # estado dos containers
+docker compose logs -f backend                      # logs, inclusive os SQLs (LOG_SQL=true)
+docker compose exec banco psql -U app -d aula       # psql dentro do container do banco
+docker compose exec backend npm run seed:reset      # volta os dados ao estado inicial
+docker compose down                                 # para tudo (os dados ficam no volume)
+docker compose down -v                              # para tudo e APAGA o banco
+```
+
+No psql: `\dt` lista as tabelas, `\d tickets` mostra colunas, índices e constraints, `\q` sai.
 
 ## Endpoints
 
-- `POST /api/login` — corpo `{ "usuario": "aluno", "senha": "aula123" }`; responde com o
-  cookie de sessão em `Set-Cookie`
-- `POST /api/logout` — apaga o cookie
-- `GET /api/eu` — quem está logado; é como o frontend descobre se há sessão, já que o
-  cookie é `HttpOnly` e o JavaScript não consegue lê-lo
-- `GET /api/pessoas?busca=ana` — busca por trecho do nome, limite de 50 resultados
-  (**exige login**)
-- `GET /api/health` — verifica a conexão com o banco
+Todos devolvem `{ sql, dados }`: o SQL que rodou e o resultado.
+
+- `GET /health-check`: estado da conexão com o banco (host e versão)
+- `GET /api/tabelas`: `SELECT *` de cada tabela
+- `GET /api/relacoes/um-para-muitos`, `/um-para-um`, `/muitos-para-muitos`
+- `GET /api/consultas/select`, `/inner-join`, `/left-join`, `/right-join`, `/full-outer-join`,
+  `/union`, `/union-all`
+- `GET /api/constraints`: constraints que existem no banco, lidas do catálogo
+- `GET /api/constraints/experimentos`: os experimentos e o SQL de cada um
+- `POST /api/constraints/experimentos/:id`: roda um experimento **dentro de uma transação com
+  ROLLBACK** e devolve como o banco reagiu. Os dados nunca mudam.
+- `GET /api/tickets/:id`: o mesmo ticket pelo Prisma (`include`), sem SQL escrito à mão
+
+## Problemas comuns
+
+- **`P1001: Can't reach database server`** nos logs do backend: o backend não alcança o banco.
+  Em dois servidores, confira o `DB_HOST` (tem que ser o IP **privado**) e o Security Group do
+  banco (a 5432 liberada para o backend). O container tenta de novo sozinho.
+- **`password authentication failed`**: a senha do `.env` não bate com a do banco. O Postgres só
+  usa `POSTGRES_PASSWORD` **na primeira vez** que cria o volume. Se você trocou a senha depois,
+  rode `docker compose down -v` (apaga os dados) e suba de novo.
+- **Porta já em uso** (`5432` ou `3000`): use `BANCO_PORTA=5433` ou `PORTA=8080` antes do
+  `docker compose up`.
+- **Build travando em instância pequena**: a `t3.micro` tem 1 GB de RAM. Crie um swap antes do
+  build (os comandos estão no ROTEIRO.md) ou use uma `t3.small`.

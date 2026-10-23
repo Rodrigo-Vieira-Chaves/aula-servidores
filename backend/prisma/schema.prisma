@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// No banco vira um tipo proprio: o Postgres recusa qualquer valor fora da lista.
+enum StatusTicket {
+  ABERTO
+  EM_ANDAMENTO
+  FECHADO
+
+  @@map("status_ticket")
+}
+
+// 1:N com Ticket: um cliente abre varios tickets.
+model Cliente {
+  id       Int      @id @default(autoincrement())
+  nome     String
+  email    String   @unique
+  criadoEm DateTime @default(now()) @map("criado_em")
+  tickets  Ticket[]
+
+  @@map("clientes")
+}
+
+// 1:N opcional com Ticket: um atendente cuida de varios tickets, mas o ticket
+// pode estar na fila, sem atendente nenhum.
+model Atendente {
+  id      Int      @id @default(autoincrement())
+  nome    String
+  email   String   @unique
+  ativo   Boolean  @default(true)
+  tickets Ticket[]
+
+  @@map("atendentes")
+}
+
+model Ticket {
+  id          Int          @id @default(autoincrement())
+  titulo      String
+  status      StatusTicket @default(ABERTO)
+  // A FK fica sempre do lado N da relacao.
+  clienteId   Int          @map("cliente_id")
+  cliente     Cliente      @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  // Int? = aceita NULL. Apagou o atendente, o ticket volta para a fila.
+  atendenteId Int?         @map("atendente_id")
+  atendente   Atendente?   @relation(fields: [atendenteId], references: [id], onDelete: SetNull)
+  criadoEm    DateTime     @default(now()) @map("criado_em")
+  avaliacao   Avaliacao?
+  tags        TicketTag[]
+
+  // O Postgres nao cria indice em FK sozinho.
+  @@index([clienteId])
+  @@index([atendenteId])
+  @@map("tickets")
+}
+
+// 1:1 com Ticket: e uma FK com UNIQUE. Sem o @unique, viraria 1:N.
+model Avaliacao {
+  id         Int     @id @default(autoincrement())
+  ticketId   Int     @unique @map("ticket_id")
+  ticket     Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  // CHECK (nota BETWEEN 1 AND 5) esta na migration: o Prisma nao tem CHECK no schema.
+  nota       Int
+  comentario String?
+
+  @@map("avaliacoes")
+}
+
+model Tag {
+  id      Int         @id @default(autoincrement())
+  nome    String      @unique
+  tickets TicketTag[]
+
+  @@map("tags")
+}
+
+// N:M entre Ticket e Tag: a tabela associativa transforma a N:M em duas 1:N.
+model TicketTag {
+  ticketId Int    @map("ticket_id")
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  tagId    Int    @map("tag_id")
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  // PK composta: o mesmo par (ticket, tag) nao se repete.
+  @@id([ticketId, tagId])
+  @@index([tagId])
+  @@map("tickets_tags")
+}
