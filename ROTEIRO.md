@@ -14,11 +14,13 @@ entre elas, e a tecla `M` esconde o menu para sobrar espaço no projetor.
 
 ## Antes da aula
 
-- [ ] EC2 criada, Docker instalado e o repositório clonado (passo a passo na parte 3)
-- [ ] `docker compose up -d --build` rodou e http://IP:3000 abre
-- [ ] O selo no topo da tela mostra **PostgreSQL 18.x · banco:5432** em verde
-- [ ] `docker compose exec backend npm run seed:reset` para começar com os dados limpos
-- [ ] Um terminal aberto no servidor para o `psql` e para o `docker compose logs -f backend`
+- [ ] `git push` feito: a EC2 vai clonar o repositório do GitHub
+- [ ] Testado na sua máquina: `docker compose up -d --build` e http://localhost:3000 abre
+- [ ] Login no console da AWS funcionando, já na região que vai usar (ex.: São Paulo, `sa-east-1`)
+- [ ] Um terminal com `ssh` (no Windows, o PowerShell já tem)
+
+A EC2 é criada ao vivo, na parte 3. Se for reaproveitar um servidor já usado, rode
+`docker compose exec backend npm run seed:reset` para voltar os dados ao estado inicial.
 
 ---
 
@@ -78,58 +80,235 @@ Depois, mostre o caminho do Prisma até o banco:
      declarar CHECK. O ORM não cobre tudo, e a migration é SQL que você pode editar.
 3. Para gerar uma migration nova em desenvolvimento: `npx prisma migrate dev --name <nome>`.
 
-## 3. Subindo na AWS
+## 3. Subindo na AWS (ao vivo)
 
 A arquitetura (desenhe na lousa):
 
 ```
-navegador ──:3000──> EC2 [ container backend ] ──:5432──> [ container banco ]
+navegador ──:3000──> EC2 Ubuntu ─┬─ container backend (NestJS)
+                                 │        │ :5432
+                                 └─ container banco (PostgreSQL 18) ── volume com os dados
 ```
 
-### Passo a passo
+O caminho: criar a máquina, instalar o Docker, subir um Postgres 18 na mão para entender o que
+acontece, e depois subir tudo com o compose.
 
-1. **EC2**: Ubuntu 24.04. Uma `t3.small` é o mais tranquilo; numa `t3.micro` (1 GB), crie
-   swap antes do build (passo 3).
-2. **Security Group**:
-   - 22 (SSH): só o seu IP;
-   - 3000 (aplicação): 0.0.0.0/0 durante a aula;
-   - 5432 (Postgres): **fechada**, ou só o seu IP se quiser usar o DBeaver. Vale comentar: banco
-     exposto para a internet com senha fraca é invadido em horas.
-3. **Docker** (no servidor):
+### 3.1 Criar a EC2
 
-   ```bash
-   curl -fsSL https://get.docker.com | sudo sh
-   sudo usermod -aG docker $USER && exit       # saia e entre de novo no SSH
+No console da AWS: **EC2 → Instances → Launch instances**.
 
-   # só em instância de 1 GB:
-   sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
-   ```
+| Campo | O que escolher |
+|---|---|
+| **Name** | `aula-modelagem` |
+| **Application and OS Images** | **Ubuntu** → *Ubuntu Server 24.04 LTS*, arquitetura 64-bit (x86) |
+| **Instance type** | `t3.small` (2 GB de RAM). Uma `t3.micro` (1 GB) também serve, mas precisa de swap (passo 3.3) |
+| **Key pair (login)** | **Create new key pair** → nome `aula-modelagem`, tipo RSA, formato `.pem`. O download acontece uma vez só: guarde o arquivo |
+| **Network settings** | **Edit** → *Create security group* com o nome `aula-modelagem-sg` e as regras da tabela abaixo |
+| **Configure storage** | **20 GiB** gp3. Os 8 GiB padrão ficam apertados com as imagens Docker |
 
-4. **Subir**:
+Regras de entrada do Security Group:
 
-   ```bash
-   git clone https://github.com/Rodrigo-Vieira-Chaves/aula-servidores.git
-   cd aula-servidores
-   docker compose up -d --build
-   docker compose logs -f backend
-   ```
+| Tipo | Porta | Origem | Para quê |
+|---|---|---|---|
+| SSH | 22 | **My IP** | você entrar no servidor |
+| Custom TCP | 3000 | **Anywhere** (0.0.0.0/0) | a turma abrir o sistema |
+| PostgreSQL | 5432 | **My IP** (opcional) | só se for usar DBeaver ou Adminer da sua máquina |
 
-   Mostre nos logs a ordem das coisas: a migration cria as tabelas, o seed popula e o Nest sobe.
-5. **Abrir** `http://IP-PUBLICO:3000`. O selo verde no topo diz em que banco o backend está
-   conectado.
-6. **psql ao vivo** (não precisa abrir porta nenhuma):
+Vale comentar: o Security Group é o firewall da instância, e cada porta aberta é uma decisão. A
+5432 **nunca** fica aberta para *Anywhere*: banco exposto na internet com senha fraca é invadido
+em questão de horas.
 
-   ```bash
-   docker compose exec banco psql -U app -d aula
-   ```
+Clique em **Launch instance**. Quando a instância estiver em **Running**, copie o **Public IPv4
+address**.
 
-   ```sql
-   \dt
-   \d tickets
-   SELECT * FROM tickets;
-   ```
+### 3.2 Entrar no servidor
 
-   O `\d tickets` mostra as FKs e os índices: é a modelagem vista de dentro do banco.
+Na pasta onde o `.pem` foi baixado:
+
+```bash
+chmod 400 aula-modelagem.pem                # o ssh recusa chave que outros usuários conseguem ler
+ssh -i aula-modelagem.pem ubuntu@IP-PUBLICO
+```
+
+No Windows, rode o `ssh` no PowerShell (o `chmod` não é necessário lá). O usuário das imagens
+Ubuntu é sempre `ubuntu`.
+
+O botão **Connect → EC2 Instance Connect** do console abre um terminal no navegador, mas só
+funciona se a regra de SSH aceitar os IPs da própria AWS. Com a regra em *My IP*, ele é bloqueado.
+
+### 3.3 Instalar o Docker
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh     # script oficial: Docker Engine + Docker Compose
+sudo usermod -aG docker $USER                    # deixa usar o docker sem sudo
+exit                                             # sai do servidor: o grupo novo vale no próximo login
+```
+
+Entre de novo com o mesmo `ssh` e confira:
+
+```bash
+docker --version
+docker compose version
+docker run --rm hello-world
+```
+
+O `hello-world` mostra o ciclo inteiro: baixou uma **imagem** do Docker Hub, criou um
+**container** a partir dela, rodou e apagou.
+
+Só se escolheu a `t3.micro`, crie 2 GB de swap antes de qualquer build:
+
+```bash
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+free -h                                          # a linha Swap tem que mostrar 2.0Gi
+```
+
+<details>
+<summary>Instalação pelo repositório apt (o jeito que a documentação do Docker recomenda para produção)</summary>
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+  | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+O script do passo anterior faz exatamente isso, de forma automática.
+</details>
+
+### 3.4 Um Postgres 18 na mão
+
+Antes do compose, vale subir o banco com um `docker run` só, para a turma ver cada peça:
+
+```bash
+docker run -d --name pg-teste \
+  -e POSTGRES_USER=app \
+  -e POSTGRES_PASSWORD=aula123 \
+  -e POSTGRES_DB=aula \
+  -p 5432:5432 \
+  -v pg-teste:/var/lib/postgresql \
+  postgres:18
+```
+
+| Trecho | O que faz |
+|---|---|
+| `-d` | roda em segundo plano |
+| `--name pg-teste` | dá um nome ao container |
+| `-e ...` | variáveis que a imagem usa **na primeira inicialização** para criar o usuário, a senha e o banco |
+| `-p 5432:5432` | porta do servidor : porta dentro do container |
+| `-v pg-teste:/var/lib/postgresql` | **volume**: os dados ficam fora do container e sobrevivem a ele |
+| `postgres:18` | a imagem oficial do Postgres, versão 18 |
+
+Pegadinha do Postgres 18: até o 17 o volume ia em `/var/lib/postgresql/data`. Quem copiar um
+tutorial antigo vai ver o container do 18 se recusar a subir, com uma mensagem explicando o
+caminho novo.
+
+```bash
+docker ps                                  # está de pé?
+docker logs pg-teste                       # procure "database system is ready to accept connections"
+docker exec -it pg-teste psql -U app -d aula
+```
+
+```sql
+SELECT version();
+\l      -- os bancos que existem
+\dt     -- as tabelas: "Did not find any tables." O banco está vazio.
+\q
+```
+
+Para provar que o volume guarda os dados (opcional, mas rápido):
+
+```bash
+docker exec pg-teste psql -U app -d aula -c "CREATE TABLE teste (id INT)"
+docker rm -f pg-teste                      # apaga o container
+# rode de novo o mesmo docker run lá de cima (seta para cima no terminal)
+docker exec pg-teste psql -U app -d aula -c "\dt"     # a tabela teste continua lá
+```
+
+Para terminar, apague o teste, o que também libera a porta 5432 para o compose:
+
+```bash
+docker rm -f pg-teste && docker volume rm pg-teste
+```
+
+### 3.5 O mesmo com o compose, e o backend junto
+
+```bash
+git clone https://github.com/Rodrigo-Vieira-Chaves/aula-servidores.git
+cd aula-servidores
+cat compose.yaml
+```
+
+Mostre que o serviço `banco` é o mesmo `docker run` de antes, só que escrito em YAML (`image`,
+`environment`, `ports`, `volumes`), com um `healthcheck` a mais. O compose transforma o comando
+num arquivo versionado.
+
+Suba **só o banco** primeiro:
+
+```bash
+docker compose up -d banco
+docker compose ps                                     # espere o banco aparecer como (healthy)
+docker compose exec banco psql -U app -d aula -c '\dt'
+```
+
+O banco está vazio ("Did not find any tables."). Agora o backend:
+
+```bash
+docker compose up -d --build backend        # o primeiro build leva de 1 a 3 minutos
+docker compose logs -f backend
+```
+
+Enquanto o build roda, abra o [Dockerfile](backend/Dockerfile) e explique: instala as
+dependências, gera o client do Prisma e compila o TypeScript.
+
+Nos logs, aparece a ordem em que as coisas acontecem:
+
+1. `Applying migration 20261023120000_init`: a migration cria as tabelas;
+2. `seed concluido: 5 clientes, ...`: o seed insere os dados da aula;
+3. `backend escutando na porta 3000`: a API está no ar.
+
+`Ctrl+C` sai dos logs, e o container continua rodando. Volte ao banco:
+
+```bash
+docker compose exec banco psql -U app -d aula -c '\dt'
+```
+
+Agora existem as 6 tabelas do modelo e mais a `_prisma_migrations`, onde o Prisma anota quais
+migrations já rodaram neste banco. Quem criou as tabelas foi a migration, não alguém digitando
+`CREATE TABLE`.
+
+### 3.6 Abrir o sistema
+
+Acesse `http://IP-PUBLICO:3000` e passe o endereço para a turma. O selo verde no topo mostra
+**PostgreSQL 18.x · banco:5432**: é o backend dizendo em que banco está conectado.
+
+Se não abrir:
+
+- `docker compose ps`: os dois containers estão `Up (healthy)`?
+- `docker compose logs backend`: tem algum erro?
+- O Security Group tem a regra da porta 3000?
+- O endereço é `http://`, e não `https://`?
+
+### 3.7 psql ao vivo
+
+Deixe um terminal aberto com o banco para usar durante o resto da aula:
+
+```bash
+docker compose exec banco psql -U app -d aula
+```
+
+```sql
+\dt
+\d tickets
+SELECT * FROM tickets;
+```
+
+O `\d tickets` mostra colunas, índices e FKs: é a modelagem vista de dentro do banco. Num segundo
+terminal, deixe rodando o `docker compose logs -f backend` para a parte 7.
 
 ### Variante: banco em servidor separado
 
@@ -146,6 +325,12 @@ acontecer de propósito uma vez: é o erro mais comum de quem sobe banco na nuve
 Comente que existe o **RDS**: o banco gerenciado da AWS, com backup, atualização e réplica
 prontos. Rodar o Postgres em container é ótimo para aprender e para ambientes pequenos; em
 produção, o normal é usar o banco gerenciado.
+
+### Depois da aula
+
+A instância cobra enquanto existir. No console: **EC2 → Instances →** selecione `aula-modelagem`
+**→ Instance state → Terminate (delete) instance**. O disco vai junto. Se quiser deixar tudo
+limpo, apague também o key pair e o security group `aula-modelagem-sg`.
 
 ## 4. Tour pelo modelo (telas 1 a 4)
 

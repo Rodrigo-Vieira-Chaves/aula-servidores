@@ -9,7 +9,7 @@ WORKDIR /app/backend
 # Dependencias primeiro: o Docker reaproveita esta camada enquanto o package.json nao mudar.
 # As devDependencies ficam porque o entrypoint usa o CLI do Prisma (migrate) e o tsx (seed).
 COPY backend/package*.json ./
-RUN npm ci
+RUN npm ci && npm cache clean --force
 
 COPY backend/ ./
 

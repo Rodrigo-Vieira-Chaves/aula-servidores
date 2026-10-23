@@ -5,6 +5,10 @@
 #   no servidor do banco:   docker compose up -d banco
 #   no servidor do backend: DB_HOST=<ip privado do banco> docker compose up -d --build --no-deps backend
 
+# Nome fixo do projeto: o compose reconhece os containers e o volume mesmo que o
+# repositorio seja clonado numa pasta com outro nome.
+name: aula
+
 services:
   banco:
     image: postgres:18
