@@ -34,7 +34,8 @@ casou, o que ficou de fora) e o resultado. O roteiro da aula está em [ROTEIRO.m
   produção: `core/database`, `api/rest/<recurso>`, `prisma/schema.prisma`, migrations e seed.
 - **Banco**: PostgreSQL 18.
 - **Frontend**: um único HTML estático, servido pelo próprio backend.
-- **Infra**: Docker Compose com dois serviços, `banco` e `backend`.
+- **Infra**: Docker Compose com três serviços: `banco`, `backend` e `adminer` (interface web
+  para o banco).
 
 ```
 backend/
@@ -91,9 +92,12 @@ cd aula-servidores
 docker compose up -d --build
 ```
 
-No Security Group, libere a porta **3000** para acessar a aplicação. A 5432 só precisa ser
-liberada se você quiser conectar no banco de fora (DBeaver, por exemplo), e nesse caso
-**somente para o seu IP**.
+No Security Group, libere a porta **3000** para acessar a aplicação.
+
+Para ver o banco pelo navegador, use o **Adminer** na porta **8081** e libere essa porta
+**somente para o seu IP**: ela é uma tela de login para o banco, e a senha padrão está neste
+repositório. Na tela de login, use o servidor `banco` (já vem preenchido), o usuário `app`, a
+senha `aula123` e a base `aula`. Com o Adminer, a 5432 pode continuar fechada.
 
 ### Banco num servidor, backend em outro
 
@@ -132,6 +136,7 @@ Todas são opcionais e lidas pelo `compose.yaml`.
 | `DB_NAME` | `aula` | nome do banco |
 | `PORTA` | `3000` | porta publicada do backend |
 | `BANCO_PORTA` | `5432` | porta publicada do Postgres |
+| `ADMINER_PORTA` | `8081` | porta publicada do Adminer |
 | `LOG_SQL` | `true` | imprime no log todo SQL enviado ao banco, inclusive o que o Prisma gera |
 
 O backend em si só lê `DATABASE_URL`, `HTTP_PORT` e `LOG_SQL`. Quem monta a `DATABASE_URL` a

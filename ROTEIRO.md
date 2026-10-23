@@ -22,6 +22,7 @@ entre elas, e a tecla `M` esconde o menu para sobrar espaço no projetor.
 A EC2 é criada ao vivo, na parte 3. Se ela já foi criada antes:
 
 - [ ] O Security Group tem a regra da porta **3000** liberada (sem ela, a turma não abre o sistema)
+  e a da **8081** só para o seu IP (o Adminer)
 - [ ] O IP público é o mesmo de antes: **parar e iniciar a instância troca o IP** (a não ser que
   ela tenha um Elastic IP)
 - [ ] Se o banco já tiver os dados de um teste, rode `docker compose exec backend npm run seed:reset`
@@ -97,8 +98,8 @@ navegador ──:3000──> EC2 Ubuntu ─┬─ container backend (NestJS)
 O caminho: criar a máquina, instalar o Docker, subir um Postgres 18 na mão para entender o que
 acontece, e depois subir tudo com o compose.
 
-> **Servidor preparado antes da aula?** Se a EC2 já tem o Docker instalado e o `banco` rodando
-> vazio, as partes 3.1 a 3.4 viram explicação: mostre a instância e o Security Group no console
+> **Servidor preparado antes da aula?** Se a EC2 já tem o Docker instalado e o `banco` (vazio) e
+> o `adminer-aula` rodando, as partes 3.1 a 3.4 viram explicação: mostre a instância e o Security Group no console
 > e, no servidor, `docker --version`, `docker ps` e `free -h` (o swap). Execute ao vivo a partir
 > da 3.5. Nesse caso:
 >
@@ -128,11 +129,11 @@ Regras de entrada do Security Group:
 |---|---|---|---|
 | SSH | 22 | **My IP** | você entrar no servidor |
 | Custom TCP | 3000 | **Anywhere** (0.0.0.0/0) | a turma abrir o sistema |
-| PostgreSQL | 5432 | **My IP** (opcional) | só se for usar DBeaver ou Adminer da sua máquina |
+| Custom TCP | 8081 | **My IP** | o Adminer, para ver o banco pelo navegador |
 
 Vale comentar: o Security Group é o firewall da instância, e cada porta aberta é uma decisão. A
-5432 **nunca** fica aberta para *Anywhere*: banco exposto na internet com senha fraca é invadido
-em questão de horas.
+5432 fica **fechada**: quem precisa ver o banco usa o Adminer, só do seu IP, ou o `psql` de dentro
+do servidor. Banco exposto na internet com senha fraca é invadido em questão de horas.
 
 Clique em **Launch instance**. Quando a instância estiver em **Running**, copie o **Public IPv4
 address**.
@@ -306,7 +307,7 @@ Acesse `http://IP-PUBLICO:3000` e passe o endereço para a turma. O selo verde n
 
 Se não abrir:
 
-- `docker compose ps`: os dois containers estão `Up (healthy)`?
+- `docker compose ps`: os containers estão `Up`, com o `banco` e o `backend` em `(healthy)`?
 - `docker compose logs backend`: tem algum erro?
 - O Security Group tem a regra da porta 3000?
 - O endereço é `http://`, e não `https://`?
@@ -327,6 +328,11 @@ SELECT * FROM tickets;
 
 O `\d tickets` mostra colunas, índices e FKs: é a modelagem vista de dentro do banco. Num segundo
 terminal, deixe rodando o `docker compose logs -f backend` para a parte 7.
+
+O mesmo banco pelo navegador: **Adminer** em `http://IP-PUBLICO:8081`, com o servidor `banco`
+(já vem preenchido), o usuário `app`, a senha `aula123` e a base `aula`. Em cada tabela, a aba de
+estrutura mostra as FKs e os índices, e o link "SQL command" roda qualquer consulta da aula. Ele
+alcança o banco pela rede interna do Docker, por isso a 5432 não precisa estar aberta.
 
 ### Variante: banco em servidor separado
 

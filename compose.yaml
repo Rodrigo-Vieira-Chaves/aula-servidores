@@ -51,5 +51,19 @@ services:
       timeout: 5s
       retries: 5
 
+  # Interface web para o banco: substitui abrir a 5432 para fora.
+  # E uma tela de login para o banco, entao no Security Group libere a porta so para o seu IP.
+  adminer:
+    image: adminer:6.1.2
+    container_name: adminer-aula
+    restart: unless-stopped
+    depends_on:
+      - banco
+    ports:
+      - "${ADMINER_PORTA:-8081}:8080"
+    environment:
+      # Ja deixa "banco" preenchido no campo Servidor da tela de login.
+      ADMINER_DEFAULT_SERVER: banco
+
 volumes:
   dados-banco:
