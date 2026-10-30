@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Joguinho</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='9' y='9' width='14' height='14' rx='4' fill='%232257d6'/%3E%3Cpath d='M6 16l-4 0M26 16h4' stroke='%232257d6' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root {
+	--bg: #f4f5f7;
+	--surface: #ffffff;
+	--surface-2: #eef0f3;
+	--text: #1a1e23;
+	--muted: #5c6571;
+	--border: #d8dde3;
+	--accent: #2257d6;
+	--ok: #15803d;
+	--alerta: #b45309;
+	--erro: #c62828;
+	color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--bg: #101317;
+		--surface: #181c22;
+		--surface-2: #222830;
+		--text: #e6e9ed;
+		--muted: #9aa3ae;
+		--border: #2e353f;
+		--accent: #7aa2ff;
+		--ok: #4ac27a;
+		--alerta: #f0b46b;
+		--erro: #ff6b6b;
+		color-scheme: dark;
+	}
+}
+:root[data-theme="dark"] {
+	--bg: #101317;
+	--surface: #181c22;
+	--surface-2: #222830;
+	--text: #e6e9ed;
+	--muted: #9aa3ae;
+	--border: #2e353f;
+	--accent: #7aa2ff;
+	--ok: #4ac27a;
+	--alerta: #f0b46b;
+	--erro: #ff6b6b;
+	color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+	margin: 0; background: var(--bg); color: var(--text);
+	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	line-height: 1.45; -webkit-font-smoothing: antialiased;
+	-webkit-user-select: none; user-select: none;
+}
+button, input { font: inherit; color: inherit; }
+
+.topo {
+	display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+	padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.marca { font-weight: 700; font-size: 1.05rem; }
+.status { display: inline-flex; align-items: center; gap: 7px; font-size: 0.8rem; color: var(--muted); padding: 3px 10px; border: 1px solid var(--border); border-radius: 999px; }
+.status::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.status.aberta { color: var(--ok); border-color: var(--ok); }
+.status.aberta::before { background: var(--ok); }
+.status.caiu { color: var(--alerta); border-color: var(--alerta); }
+.status.caiu::before { background: var(--alerta); }
+.link-aula { margin-left: auto; font-size: 0.88rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+
+main { max-width: 1100px; margin: 0 auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 18px; }
+.entrar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.entrar input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); flex: 0 1 220px; min-width: 0; -webkit-user-select: text; user-select: text; }
+.botao { border: 0; border-radius: 10px; padding: 10px 18px; cursor: pointer; background: var(--accent); color: #fff; font-weight: 700; }
+.botao:disabled { opacity: 0.5; cursor: not-allowed; }
+.dica { color: var(--muted); font-size: 0.9rem; }
+.erro { color: var(--erro); font-size: 0.9rem; min-height: 1.3em; }
+
+.pista { position: relative; height: 160px; border-radius: 16px; background: linear-gradient(var(--surface-2), var(--surface-2)) center 80% / 100% 8px no-repeat, var(--surface); border: 1px solid var(--border); margin: 0 22px; }
+.jogador { position: absolute; bottom: 18px; transform: translateX(-50%); transition: left 60ms linear; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.jogador .corpo { width: 44px; height: 44px; border-radius: 12px; box-shadow: 0 2px 6px rgb(0 0 0 / 0.25); }
+.jogador.eu .corpo { outline: 3px solid var(--text); outline-offset: 3px; }
+.jogador .nome { font-size: 0.78rem; font-weight: 700; white-space: nowrap; background: var(--surface); padding: 0 7px; border-radius: 999px; border: 1px solid var(--border); }
+.jogador.eu .nome { background: var(--text); color: var(--bg); }
+.vazio { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-style: italic; }
+
+.controles { display: flex; justify-content: center; gap: 20px; }
+.controles button {
+	width: 120px; height: 90px; border-radius: 18px; border: 1px solid var(--border); background: var(--surface);
+	font-size: 2.2rem; cursor: pointer; touch-action: none; box-shadow: 0 2px 6px rgb(0 0 0 / 0.08);
+}
+.controles button.apertado { background: var(--accent); color: #fff; border-color: var(--accent); }
+.controles button:disabled { opacity: 0.4; }
+
+.numeros { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.numero { border: 1px solid var(--border); border-radius: 10px; padding: 6px 14px; background: var(--surface); text-align: center; min-width: 120px; }
+.numero b { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.numero span { font-size: 0.75rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<header class="topo">
+	<span class="marca">🎮 Joguinho</span>
+	<span id="status" class="status">conectando…</span>
+	<a class="link-aula" href="/#/jogo">← a aula</a>
+</header>
+<main>
+	<form id="form-entrar" class="entrar">
+		<input id="nome" placeholder="seu nome" maxlength="16" autocomplete="off">
+		<button class="botao" id="btn-entrar">Entrar no jogo</button>
+		<span class="dica" id="dica">Você está só assistindo. Entre para ganhar um quadrado.</span>
+	</form>
+	<div id="pista" class="pista"><div class="vazio">conectando…</div></div>
+	<div class="controles">
+		<button id="esq" aria-label="Esquerda" disabled>◀</button>
+		<button id="dir" aria-label="Direita" disabled>▶</button>
+	</div>
+	<div class="erro" id="erro"></div>
+	<div class="numeros">
+		<div class="numero"><b id="latencia">–</b><span>latência (ida e volta)</span></div>
+		<div class="numero"><b id="recebidos">0</b><span>frames recebidos por segundo</span></div>
+		<div class="numero"><b id="enviados">0</b><span>frames enviados (total)</span></div>
+		<div class="numero"><b id="qtd">0</b><span>jogadores</span></div>
+	</div>
+</main>
+
+<script>
+'use strict';
+
+const $ = (id) => document.getElementById(id);
+const pista = $('pista');
+const nome = $('nome');
+let ws = null;
+let meuId = null;
+let entrou = false;
+let direcaoAtual = 0;
+let recebidosNoSegundo = 0;
+let enviados = 0;
+const apertadas = new Set();
+
+try {
+	nome.value = localStorage.getItem('nome') || '';
+	const tema = localStorage.getItem('tema');
+	if (tema) document.documentElement.dataset.theme = tema;
+} catch {}
+
+function mandar(event, data) {
+	if (ws?.readyState !== WebSocket.OPEN) return;
+	ws.send(JSON.stringify({ event, data }));
+	enviados++;
+	$('enviados').textContent = enviados;
+}
+
+function status(classe, rotulo) {
+	$('status').className = `status ${classe}`;
+	$('status').textContent = rotulo;
+}
+
+function desenhar(jogadores) {
+	$('qtd').textContent = jogadores.length;
+	if (!jogadores.length) {
+		pista.innerHTML = '<div class="vazio">ninguém jogando ainda</div>';
+		return;
+	}
+	pista.querySelector('.vazio')?.remove();
+	const vistos = new Set();
+	for (const j of jogadores) {
+		vistos.add(String(j.id));
+		let no = pista.querySelector(`[data-id="${j.id}"]`);
+		if (!no) {
+			no = document.createElement('div');
+			no.className = 'jogador';
+			no.dataset.id = j.id;
+			no.innerHTML = '<span class="nome"></span><div class="corpo"></div>';
+			pista.append(no);
+		}
+		no.classList.toggle('eu', j.id === meuId);
+		no.querySelector('.nome').textContent = j.id === meuId ? `${j.nome} (você)` : j.nome;
+		no.querySelector('.corpo').style.background = j.cor;
+		no.style.left = `${j.x}%`;
+	}
+	for (const no of pista.querySelectorAll('.jogador')) if (!vistos.has(no.dataset.id)) no.remove();
+}
+
+function conectar() {
+	ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/jogo`);
+	status('', 'conectando…');
+
+	ws.addEventListener('open', () => {
+		status('aberta', 'conectado');
+		// Caiu e voltou: o servidor nao lembra de ninguem, entao entramos de novo.
+		if (entrou) mandar('entrar', { nome: nome.value });
+	});
+
+	ws.addEventListener('message', (e) => {
+		const { event, data } = JSON.parse(e.data);
+		recebidosNoSegundo++;
+		if (event === 'estado') desenhar(data.jogadores);
+		else if (event === 'voce') {
+			meuId = data.id;
+			entrou = true;
+			$('esq').disabled = $('dir').disabled = false;
+			$('btn-entrar').textContent = 'Trocar o nome';
+			$('dica').textContent = 'Use ← → (ou A e D), ou os botões abaixo.';
+		} else if (event === 'latencia') {
+			$('latencia').textContent = `${Math.round(performance.now() - data.t)} ms`;
+		} else if (event === 'exception') {
+			$('erro').textContent = data.message;
+		}
+	});
+
+	ws.addEventListener('close', (e) => {
+		status('caiu', `caiu (código ${e.code}), reconectando…`);
+		meuId = null;
+		direcaoAtual = 0;
+		$('latencia').textContent = '–';
+		setTimeout(conectar, 2000);
+	});
+}
+
+// O navegador so avisa quando a direcao muda (apertou ou soltou), e nao a cada passo.
+// Quem anda e o servidor, a cada tick.
+function atualizarDirecao() {
+	const direcao = (apertadas.has('dir') ? 1 : 0) - (apertadas.has('esq') ? 1 : 0);
+	$('esq').classList.toggle('apertado', apertadas.has('esq'));
+	$('dir').classList.toggle('apertado', apertadas.has('dir'));
+	if (!entrou || direcao === direcaoAtual) return;
+	direcaoAtual = direcao;
+	mandar('mover', { direcao });
+}
+
+const TECLAS = { ArrowLeft: 'esq', a: 'esq', A: 'esq', ArrowRight: 'dir', d: 'dir', D: 'dir' };
+
+document.addEventListener('keydown', (ev) => {
+	const lado = TECLAS[ev.key];
+	if (!lado || ev.target === nome) return;
+	ev.preventDefault();
+	if (ev.repeat) return;
+	apertadas.add(lado);
+	atualizarDirecao();
+});
+
+document.addEventListener('keyup', (ev) => {
+	const lado = TECLAS[ev.key];
+	if (!lado) return;
+	apertadas.delete(lado);
+	atualizarDirecao();
+});
+
+// Trocou de aba com a tecla apertada: o keyup nunca chega.
+window.addEventListener('blur', () => {
+	apertadas.clear();
+	atualizarDirecao();
+});
+
+for (const lado of ['esq', 'dir']) {
+	const botao = $(lado);
+	botao.addEventListener('pointerdown', (ev) => {
+		ev.preventDefault();
+		botao.setPointerCapture(ev.pointerId);
+		apertadas.add(lado);
+		atualizarDirecao();
+	});
+	for (const evento of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+		botao.addEventListener(evento, () => {
+			apertadas.delete(lado);
+			atualizarDirecao();
+		});
+	}
+	botao.addEventListener('contextmenu', (ev) => ev.preventDefault());
+}
+
+$('form-entrar').addEventListener('submit', (ev) => {
+	ev.preventDefault();
+	$('erro').textContent = '';
+	mandar('entrar', { nome: nome.value });
+	try {
+		localStorage.setItem('nome', nome.value.trim());
+	} catch {}
+	nome.blur();
+});
+
+setInterval(() => {
+	$('recebidos').textContent = recebidosNoSegundo;
+	recebidosNoSegundo = 0;
+}, 1000);
+
+// A latencia e medida pela aplicacao: manda um numero e espera ele voltar.
+setInterval(() => mandar('latencia', { t: performance.now() }), 2000);
+
+conectar();
+</script>
+</body>
+</html>

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Modelagem de Dados</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='16' cy='7' rx='11' ry='4' fill='%232257d6'/%3E%3Cpath d='M5 7v18c0 2.2 4.9 4 11 4s11-1.8 11-4V7c0 2.2-4.9 4-11 4S5 9.2 5 7z' fill='%232257d6' opacity='.75'/%3E%3C/svg%3E">
+<title>WebSocket</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M5 11h19l-5-5M27 21H8l5 5' fill='none' stroke='%232257d6' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root {
 	--bg: #f4f5f7;
@@ -14,17 +14,18 @@
 	--muted: #5c6571;
 	--border: #d8dde3;
 	--accent: #2257d6;
-	--cor-a: #2f6fdf;
-	--cor-b: #e0782a;
-	--cor-ab: #8a4fd6;
-	--rel-1n: #0e8a7e;
-	--rel-11: #c27c0e;
-	--rel-nm: #c2367a;
-	--pk: #b7791f;
-	--fk: #2f6fdf;
-	--uq: #15803d;
-	--ck: #c2410c;
-	--nn: #6b7280;
+	--http: #e0782a;
+	--ws: #0e8a7e;
+	--vazio: #9aa3ae;
+	--sobe: #15803d;
+	--desce: #c62828;
+	--f-fin: #2f6fdf;
+	--f-rsv: #6b7280;
+	--f-op: #8a4fd6;
+	--f-mask: #c2367a;
+	--f-len: #c27c0e;
+	--f-chave: #0e7490;
+	--f-dados: #15803d;
 	--ok: #15803d;
 	--erro: #c62828;
 	--code-bg: #f5f6f9;
@@ -48,17 +49,18 @@
 		--muted: #9aa3ae;
 		--border: #2e353f;
 		--accent: #7aa2ff;
-		--cor-a: #5b91f2;
-		--cor-b: #f0954f;
-		--cor-ab: #ad84f2;
-		--rel-1n: #2fc2b1;
-		--rel-11: #e8a63a;
-		--rel-nm: #ec6aa6;
-		--pk: #e0a944;
-		--fk: #6c9cf4;
-		--uq: #4ac27a;
-		--ck: #f08a52;
-		--nn: #9aa3ae;
+		--http: #f0954f;
+		--ws: #2fc2b1;
+		--vazio: #5c6571;
+		--sobe: #4ac27a;
+		--desce: #ff6b6b;
+		--f-fin: #5b91f2;
+		--f-rsv: #9aa3ae;
+		--f-op: #ad84f2;
+		--f-mask: #ec6aa6;
+		--f-len: #e8a63a;
+		--f-chave: #5fd0e0;
+		--f-dados: #4ac27a;
 		--ok: #4ac27a;
 		--erro: #ff6b6b;
 		--code-bg: #13171c;
@@ -80,17 +82,18 @@
 	--muted: #9aa3ae;
 	--border: #2e353f;
 	--accent: #7aa2ff;
-	--cor-a: #5b91f2;
-	--cor-b: #f0954f;
-	--cor-ab: #ad84f2;
-	--rel-1n: #2fc2b1;
-	--rel-11: #e8a63a;
-	--rel-nm: #ec6aa6;
-	--pk: #e0a944;
-	--fk: #6c9cf4;
-	--uq: #4ac27a;
-	--ck: #f08a52;
-	--nn: #9aa3ae;
+	--http: #f0954f;
+	--ws: #2fc2b1;
+	--vazio: #5c6571;
+	--sobe: #4ac27a;
+	--desce: #ff6b6b;
+	--f-fin: #5b91f2;
+	--f-rsv: #9aa3ae;
+	--f-op: #ad84f2;
+	--f-mask: #ec6aa6;
+	--f-len: #e8a63a;
+	--f-chave: #5fd0e0;
+	--f-dados: #4ac27a;
 	--ok: #4ac27a;
 	--erro: #ff6b6b;
 	--code-bg: #13171c;
@@ -114,6 +117,7 @@ body {
 	line-height: 1.5;
 	-webkit-font-smoothing: antialiased;
 }
+button, input { font: inherit; color: inherit; }
 a { color: var(--accent); }
 code, pre { font-family: var(--mono); }
 code { font-size: 0.9em; background: var(--surface-2); padding: 0.1em 0.35em; border-radius: 4px; }
@@ -135,7 +139,7 @@ h1, h2, h3 { line-height: 1.2; margin: 0; }
 	display: inline-flex; align-items: center; gap: 8px;
 	font-size: 0.78rem; color: var(--muted);
 	padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px;
-	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46vw;
+	white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw;
 }
 .saude::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
 .saude.ok::before { background: var(--ok); }
@@ -163,9 +167,7 @@ body.sem-menu .menu { display: none; }
 	position: sticky; top: 57px; align-self: start;
 	height: calc(100vh - 57px); overflow-y: auto;
 }
-.menu h4 {
-	margin: 18px 10px 6px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
-}
+.menu h4 { margin: 18px 10px 6px; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .menu h4:first-child { margin-top: 0; }
 .menu a {
 	display: flex; align-items: center; gap: 10px;
@@ -179,30 +181,29 @@ body.sem-menu .menu { display: none; }
 
 .conteudo { padding: 28px 36px 40px; min-width: 0; }
 .pagina { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 26px; }
-.carregando { color: var(--muted); }
 
 /* ---------- blocos de pagina ---------- */
 .pag-cab .eyebrow { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
 .pag-cab h1 { font-size: 2.1rem; margin-top: 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
 .pag-cab h1 .sub { font-size: 1.1rem; font-weight: 500; color: var(--muted); }
-.pag-cab .lead { font-size: 1.12rem; margin: 10px 0 0; max-width: 70ch; }
+.pag-cab .lead { font-size: 1.12rem; margin: 10px 0 0; max-width: 75ch; }
 
-.secao { display: flex; flex-direction: column; gap: 14px; }
+.secao { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .secao > h2 { font-size: 1.2rem; }
 .secao > .ajuda { margin: -6px 0 0; color: var(--muted); font-size: 0.92rem; }
 
 .cartao {
 	background: var(--surface); border: 1px solid var(--border); border-radius: var(--raio);
 	padding: 18px 20px; box-shadow: var(--sombra); min-width: 0;
+	display: flex; flex-direction: column; gap: 12px;
 }
-.cartao > h3 { font-size: 1rem; margin-bottom: 10px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.cartao > h3 { font-size: 1rem; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .cartao > h3 .qtd { font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+.cartao > p { margin: 0; }
+.cartao .rodape-cartao { margin: 0; color: var(--muted); font-size: 0.88rem; }
 
 .grade-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .grade-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.grade-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px; }
-.grade-dados { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 18px; }
-.grade-dados .largo { grid-column: 1 / -1; }
 
 .pergunta {
 	border-left: 4px solid var(--accent);
@@ -212,21 +213,16 @@ body.sem-menu .menu { display: none; }
 .pergunta .rot { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
 .pergunta p { margin: 4px 0 0; font-size: 1.15rem; font-weight: 600; }
 
-.nota { border-radius: var(--raio); padding: 14px 18px; border: 1px solid var(--border); background: var(--surface); }
+.nota { border-radius: var(--raio); padding: 14px 18px; border: 1px solid var(--border); background: var(--surface); min-width: 0; }
 .nota .rot { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; color: var(--muted); }
-.nota ul { margin: 6px 0 0; padding-left: 1.2em; }
+.nota ul, .nota ol { margin: 6px 0 0; padding-left: 1.2em; }
 .nota li + li { margin-top: 4px; }
 .nota p { margin: 6px 0 0; }
-.nota.repare { border-color: color-mix(in srgb, var(--cor-ab) 45%, var(--border)); }
-.nota.repare .rot { color: var(--cor-ab); }
-.nota.dica { border-color: color-mix(in srgb, var(--rel-11) 45%, var(--border)); }
-.nota.dica .rot { color: var(--rel-11); }
+.nota.repare { border-color: color-mix(in srgb, var(--f-op) 45%, var(--border)); }
+.nota.repare .rot { color: var(--f-op); }
+.nota.dica { border-color: color-mix(in srgb, var(--f-len) 45%, var(--border)); }
+.nota.dica .rot { color: var(--f-len); }
 .nota .codigo { margin-top: 10px; }
-
-.texto p { margin: 0 0 10px; }
-.texto p:last-child { margin-bottom: 0; }
-.lista-como { margin: 0; padding-left: 1.2em; }
-.lista-como li + li { margin-top: 6px; }
 
 /* ---------- codigo ---------- */
 .codigo { margin: 0; min-width: 0; }
@@ -234,189 +230,185 @@ body.sem-menu .menu { display: none; }
 .codigo pre {
 	margin: 0; padding: 14px 16px; background: var(--code-bg);
 	border: 1px solid var(--border); border-radius: 8px;
-	font-size: 0.88rem; line-height: 1.55; overflow-x: auto; white-space: pre;
+	font-size: 0.86rem; line-height: 1.55; overflow-x: auto; white-space: pre;
 }
-.codigo.grande pre { font-size: 1rem; }
 .hl-k { color: var(--hl-k); font-weight: 600; }
 .hl-j { color: var(--hl-j); font-weight: 700; }
 .hl-s { color: var(--hl-s); }
 .hl-c { color: var(--hl-c); font-style: italic; }
 .hl-a { color: var(--hl-a); }
 .hl-n { color: var(--hl-n); }
-.hl-t { color: var(--hl-k); }
+.hl-jk { color: var(--hl-a); }
 
-/* ---------- tabelas de dados ---------- */
 .tabela-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
-th, td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th, td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
 tbody tr:last-child td { border-bottom: 0; }
-th { background: var(--surface-2); font-family: var(--mono); font-size: 0.78rem; font-weight: 600; color: var(--muted); }
-td { font-variant-numeric: tabular-nums; }
-tr.grupos th { font-family: inherit; text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.7rem; text-align: center; color: var(--text); }
-tr.grupos th.g-a { background: color-mix(in srgb, var(--cor-a) 22%, var(--surface)); }
-tr.grupos th.g-b { background: color-mix(in srgb, var(--cor-b) 22%, var(--surface)); }
-tr.grupos th + th { border-left: 2px solid var(--surface); }
-th.col-on { color: var(--text); box-shadow: inset 0 -3px 0 var(--rel-11); }
-td.col-on { font-weight: 700; }
-.nulo { font-family: var(--mono); font-size: 0.8em; color: var(--muted); font-style: italic; opacity: 0.85; }
-.bool { font-family: var(--mono); font-size: 0.85em; }
-td.vazio { color: var(--muted); font-style: italic; text-align: center; }
-.mono { font-family: var(--mono); }
+th { background: var(--surface-2); font-size: 0.78rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+td.mono, .mono { font-family: var(--mono); font-size: 0.84rem; }
+td.nowrap { white-space: nowrap; }
 
-tbody tr { transition: background-color 0.12s, opacity 0.12s; }
-tbody tr.reg-a td:first-child, tbody tr.reg-b td:first-child, tbody tr.reg-ab td:first-child { box-shadow: inset 4px 0 0 var(--cor-linha); }
-tr.reg-a { --cor-linha: var(--cor-a); background: color-mix(in srgb, var(--cor-a) 11%, transparent); }
-tr.reg-b { --cor-linha: var(--cor-b); background: color-mix(in srgb, var(--cor-b) 11%, transparent); }
-tr.reg-ab { --cor-linha: var(--cor-ab); background: color-mix(in srgb, var(--cor-ab) 12%, transparent); }
-tr.fora { background: transparent; opacity: 0.38; }
-tr.fora td { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text) 35%, transparent); }
-tr.fora td:first-child { box-shadow: inset 4px 0 0 color-mix(in srgb, var(--cor-linha) 45%, transparent); }
-tr.foco, tr.ligado { opacity: 1; }
-tr.foco td { background: color-mix(in srgb, var(--accent) 20%, transparent); }
-tr.ligado td { background: color-mix(in srgb, var(--accent) 11%, transparent); }
-.passe-mouse tbody tr { cursor: default; }
-
-.marca-col { display: inline-block; margin-left: 6px; padding: 0 4px; border-radius: 3px; font-size: 0.62rem; font-weight: 700; vertical-align: 1px; color: #fff; }
-.m-pk { background: var(--pk); }
-.m-fk { background: var(--fk); }
-.m-uq { background: var(--uq); }
-
-.titulo-tabela { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-.titulo-tabela strong { font-family: var(--mono); font-size: 0.95rem; }
-.titulo-tabela .papel { font-size: 0.7rem; font-weight: 700; color: #fff; padding: 1px 7px; border-radius: 999px; }
-.papel.p-a { background: var(--cor-a); }
-.papel.p-b { background: var(--cor-b); }
-.titulo-tabela .qtd { color: var(--muted); font-size: 0.82rem; }
-.titulo-tabela .sql-mini { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); margin-left: auto; }
-
-/* ---------- diagrama ER ---------- */
-.er { width: 100%; height: auto; display: block; }
-.er-caixa { fill: var(--surface); stroke: var(--border); stroke-width: 1.2; }
-.er-cabeca { fill: var(--surface-2); }
-.er-nome { font: 700 14px var(--mono); fill: var(--text); }
-.er-col { font: 13px var(--mono); fill: var(--text); }
-.er-col.er-pk { font-weight: 700; }
-.er-tipo { font: 11px var(--mono); fill: var(--muted); }
-.er-sep { stroke: var(--border); stroke-width: 1; }
-.er-badge.b-pk { fill: var(--pk); }
-.er-badge.b-fk { fill: var(--fk); }
-.er-badge.b-uq { fill: var(--uq); }
-.er-badge.b-ck { fill: var(--ck); }
-.er-badge.b-null { fill: none; stroke: var(--nn); stroke-dasharray: 2 2; }
-.er-badge-txt { font: 700 9.5px var(--mono); fill: #fff; }
-.er-badge-txt.t-null { fill: var(--nn); }
-.er-lig { fill: none; stroke-width: 2.2; }
-.er-lig.rel-1n, .er-ponta.rel-1n { stroke: var(--rel-1n); }
-.er-lig.rel-11, .er-ponta.rel-11 { stroke: var(--rel-11); }
-.er-lig.rel-nm, .er-ponta.rel-nm { stroke: var(--rel-nm); }
-.er-ponta { fill: var(--surface); stroke-width: 2; }
-.er-card { font: 700 12px var(--mono); }
-.er-card.rel-1n { fill: var(--rel-1n); }
-.er-card.rel-11 { fill: var(--rel-11); }
-.er-card.rel-nm { fill: var(--rel-nm); }
-
-.legenda-er { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 14px; font-size: 0.85rem; color: var(--muted); }
-.legenda-er span { display: inline-flex; align-items: center; gap: 7px; }
-.traco { width: 22px; height: 3px; border-radius: 2px; display: inline-block; }
-.traco.rel-1n { background: var(--rel-1n); }
-.traco.rel-11 { background: var(--rel-11); }
-.traco.rel-nm { background: var(--rel-nm); }
-.selo { font: 700 0.62rem var(--mono); color: #fff; padding: 1px 5px; border-radius: 3px; }
-.selo.s-pk { background: var(--pk); }
-.selo.s-fk { background: var(--fk); }
-.selo.s-uq { background: var(--uq); }
-.selo.s-ck { background: var(--ck); }
-.selo.s-nn { background: var(--nn); }
-.selo.s-null { background: transparent; color: var(--nn); border: 1px dashed var(--nn); }
-
-/* ---------- Venn ---------- */
-.venn-caixa { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.venn { width: 100%; max-width: 360px; height: auto; }
-.venn .regiao { fill: var(--surface-2); transition: fill 0.2s; }
-.venn .on.r-a { fill: color-mix(in srgb, var(--cor-a) 62%, transparent); }
-.venn .on.r-b { fill: color-mix(in srgb, var(--cor-b) 62%, transparent); }
-.venn .on.r-ab { fill: color-mix(in srgb, var(--cor-ab) 70%, transparent); }
-.venn .contorno { fill: none; stroke: var(--text); stroke-width: 1.6; opacity: 0.55; }
-.venn .letra { font: 700 26px system-ui, sans-serif; fill: var(--text); opacity: 0.8; }
-.venn .nome { font: 600 13px var(--mono); fill: var(--muted); }
-.venn .rot-where { font: 700 12px var(--mono); fill: var(--text); }
-.legenda { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 360px; font-size: 0.88rem; }
-.legenda li { display: flex; align-items: center; gap: 10px; }
-.legenda .amostra { width: 14px; height: 14px; border-radius: 4px; flex: none; }
-.amostra.reg-a { background: var(--cor-a); }
-.amostra.reg-b { background: var(--cor-b); }
-.amostra.reg-ab { background: var(--cor-ab); }
-.amostra.reg-fora { background: var(--surface-2); border: 1px solid var(--border); }
-.legenda .status { margin-left: auto; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-.legenda li.entra .status { color: var(--ok); }
-.legenda li.sai { color: var(--muted); }
-.legenda li.sai .status { color: var(--muted); }
-.legenda li.sai .amostra { opacity: 0.35; }
-
-.consulta-topo { display: grid; grid-template-columns: minmax(260px, 360px) minmax(0, 1fr); gap: 26px; align-items: start; }
-.consulta-explica { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.consulta-explica > p { margin: 0; font-size: 1.02rem; }
+.botao {
+	background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+	padding: 8px 16px; font-weight: 600; font-size: 0.9rem; cursor: pointer; white-space: nowrap; text-decoration: none;
+}
+.botao:hover { filter: brightness(1.08); }
+.botao:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+.botao.sec { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.botao.sec.ativo { background: var(--accent); color: #fff; border-color: var(--accent); }
+.botao.perigo { background: var(--erro); }
+.botoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.entrada {
+	padding: 8px 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+	min-width: 0; flex: 1;
+}
+.entrada.curta { flex: 0 1 150px; }
+.linha-form { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .alternar { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; align-self: flex-start; }
-.alternar button { border: 0; background: var(--surface); color: var(--text); padding: 7px 14px; font: 600 0.85rem var(--mono); cursor: pointer; }
+.alternar button { border: 0; background: var(--surface); color: var(--text); padding: 7px 14px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
 .alternar button + button { border-left: 1px solid var(--border); }
 .alternar button.ativo { background: var(--accent); color: #fff; }
 
-.resultado-cab { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.resultado-cab h2 { font-size: 1.2rem; }
-.resultado-cab .qtd { color: var(--muted); font-size: 0.9rem; }
-.resultado-cab .ajuda { color: var(--muted); font-size: 0.85rem; margin-left: auto; }
+/* ---------- diagrama de sequencia ---------- */
+.seq { width: 100%; height: auto; display: block; max-width: 420px; margin: 0 auto; }
+.seq-ator { fill: var(--surface-2); stroke: var(--border); }
+.seq-ator-txt { font: 600 13px system-ui, sans-serif; fill: var(--text); }
+.seq-vida { stroke: var(--border); stroke-width: 2; stroke-dasharray: 4 4; }
+.seq-faixa { fill: color-mix(in srgb, var(--ws) 10%, transparent); stroke: color-mix(in srgb, var(--ws) 40%, transparent); stroke-dasharray: 3 3; }
+.seq-faixa-txt { font: 700 10px var(--mono); fill: var(--ws); letter-spacing: 0.04em; }
+.seq-seta { stroke-width: 2.2; }
+.seq-texto { font: 600 13px var(--mono); }
+.seq-nota { font: italic 12px system-ui, sans-serif; fill: var(--muted); }
+.seq .http { stroke: var(--http); fill: var(--http); }
+.seq .vazio { stroke: var(--vazio); fill: var(--vazio); }
+.seq .ws { stroke: var(--ws); fill: var(--ws); }
+.seq text.http, .seq text.vazio, .seq text.ws { stroke: none; }
+.seq line.vazio { stroke-dasharray: 5 4; }
 
-/* ---------- constraints ---------- */
-.catalogo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.catalogo li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 10px; align-items: baseline; font-size: 0.85rem; }
-.catalogo .tipo { font: 700 0.62rem var(--mono); color: #fff; padding: 2px 6px; border-radius: 4px; text-align: center; }
-.catalogo .def { font-family: var(--mono); font-size: 0.8rem; overflow-wrap: anywhere; }
-.catalogo .nome { grid-column: 2; color: var(--muted); font-family: var(--mono); font-size: 0.7rem; }
-.t-pk { background: var(--pk); }
-.t-fk { background: var(--fk); }
-.t-uq { background: var(--uq); }
-.t-ck { background: var(--ck); }
-.t-nn { background: var(--nn); }
+/* ---------- polling x websocket ---------- */
+.contadores { display: flex; gap: 10px; flex-wrap: wrap; }
+.contador { border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; min-width: 96px; }
+.contador b { display: block; font-size: 1.5rem; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.contador span { font-size: 0.75rem; color: var(--muted); }
+.contador.ruim b { color: var(--vazio); }
+.contador.bom b { color: var(--ok); }
+.faixa-req { display: flex; flex-wrap: wrap; gap: 3px; min-height: 14px; }
+.faixa-req i { width: 10px; height: 14px; border-radius: 2px; background: var(--vazio); opacity: 0.55; }
+.faixa-req i.novidade { background: var(--ok); opacity: 1; }
+.feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+.feed li { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 0.9rem; display: flex; gap: 8px; align-items: baseline; }
+.feed li .autor { font-weight: 700; }
+.feed li .atraso { margin-left: auto; font-family: var(--mono); font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.feed li .atraso.lento { color: var(--http); font-weight: 700; }
+.feed li .atraso.rapido { color: var(--ws); font-weight: 700; }
+.feed .vazio-feed { color: var(--muted); font-style: italic; border-style: dashed; }
+.cartao.lado-http { border-top: 4px solid var(--http); }
+.cartao.lado-ws { border-top: 4px solid var(--ws); }
 
-details.ver-sql summary { cursor: pointer; color: var(--muted); font-size: 0.88rem; }
-details.ver-sql[open] summary { margin-bottom: 10px; }
-
-.exp { display: flex; flex-direction: column; gap: 12px; }
-.exp header { display: flex; align-items: flex-start; gap: 10px; }
-.exp h3 { font-size: 1rem; }
-.exp .espera { margin-left: auto; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid; }
-.espera.aceita { color: var(--ok); }
-.espera.recusa { color: var(--erro); }
-.exp > p { margin: 0; color: var(--muted); font-size: 0.92rem; }
-.exp .mini { font-size: 0.8rem; color: var(--muted); margin: 0; }
-.botao {
-	align-self: flex-start;
-	background: var(--accent); color: #fff; border: 0; border-radius: 8px;
-	padding: 8px 16px; font: 600 0.9rem inherit; cursor: pointer;
-}
-.botao:hover { filter: brightness(1.08); }
-.botao:disabled { opacity: 0.6; cursor: wait; }
-.botao.sec { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
-.botao.sec.ativo { background: var(--accent); color: #fff; border-color: var(--accent); }
-.exp-saida:empty { display: none; }
-.exp-saida { display: flex; flex-direction: column; gap: 10px; }
-.veredito { border-radius: 8px; padding: 10px 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+/* ---------- handshake ---------- */
+.http-msg pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.http-msg .linha1 { color: var(--http); font-weight: 700; }
+.http-msg .nome-cab { color: var(--muted); }
+.http-msg .chave-ws { background: color-mix(in srgb, var(--ws) 16%, transparent); border-radius: 3px; }
+.http-msg .chave-ws .nome-cab { color: var(--ws); font-weight: 700; }
+.conta { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 14px; align-items: baseline; margin: 0; }
+.conta dt { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.conta dd { margin: 0; font-family: var(--mono); font-size: 0.86rem; overflow-wrap: anywhere; }
+.conta .guid { color: var(--f-op); font-weight: 700; }
+.conta .chave { color: var(--f-chave); font-weight: 700; }
+.conta .accept { color: var(--ok); font-weight: 700; }
+.veredito { border-radius: 8px; padding: 10px 14px; font-weight: 700; }
 .veredito.ok { background: color-mix(in srgb, var(--ok) 13%, transparent); color: var(--ok); }
 .veredito.erro { background: color-mix(in srgb, var(--erro) 12%, transparent); color: var(--erro); }
-.erro-pg { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 0.85rem; }
-.erro-pg dt { color: var(--muted); }
-.erro-pg dd { margin: 0; font-family: var(--mono); font-size: 0.8rem; overflow-wrap: anywhere; }
-.rollback { font-size: 0.78rem; color: var(--muted); margin: 0; }
-.antes-depois { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.antes-depois .rot { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 4px; }
 
-/* ---------- prisma ---------- */
-.botoes { display: flex; flex-wrap: wrap; gap: 8px; }
-.json pre { max-height: 640px; overflow: auto; }
-.hl-jk { color: var(--hl-a); }
+/* ---------- frame ---------- */
+.bytes { display: flex; flex-wrap: wrap; gap: 4px; }
+.byte { font: 600 0.95rem var(--mono); padding: 6px 7px; border-radius: 6px; color: #fff; min-width: 2.6em; text-align: center; }
+.byte.c-b0 { background: var(--f-op); }
+.byte.c-b1 { background: var(--f-len); }
+.byte.c-ext { background: color-mix(in srgb, var(--f-len) 70%, #000); }
+.byte.c-chave { background: var(--f-chave); }
+.byte.c-dados { background: var(--f-dados); }
+.byte.c-mais { background: var(--surface-2); color: var(--muted); border: 1px dashed var(--border); }
+.legenda-bytes { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); }
+.legenda-bytes span { display: inline-flex; align-items: center; gap: 6px; }
+.legenda-bytes i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.bits { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; }
+.bit { text-align: center; border-radius: 5px; padding: 4px 0 2px; color: #fff; }
+.bit b { display: block; font: 700 1.1rem var(--mono); }
+.bit small { display: block; font-size: 0.62rem; opacity: 0.9; letter-spacing: 0.02em; }
+.bit.fin { background: var(--f-fin); }
+.bit.rsv { background: var(--f-rsv); }
+.bit.op { background: var(--f-op); }
+.bit.mask { background: var(--f-mask); }
+.bit.len { background: var(--f-len); }
+.leitura { margin: 6px 0 0; font-size: 0.9rem; }
+.leitura b { font-family: var(--mono); }
+.xor { font-family: var(--mono); font-size: 0.82rem; }
+.xor th { font-family: system-ui, sans-serif; }
+.xor td { text-align: center; padding: 5px 6px; }
+.xor td:first-child, .xor th:first-child { text-align: left; white-space: nowrap; }
+.xor .r-dado td { color: var(--f-dados); font-weight: 700; }
+.xor .r-chave td { color: var(--f-chave); }
+.xor .r-fio td { color: var(--f-mask); font-weight: 700; }
+.xor .r-dado td:first-child, .xor .r-chave td:first-child, .xor .r-fio td:first-child { color: var(--text); font-weight: 600; font-family: system-ui, sans-serif; }
+.totais { display: flex; gap: 10px; flex-wrap: wrap; }
 
-/* ---------- caixa de erro e rodape ---------- */
+/* ---------- api / laboratorio ---------- */
+.estados { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.estado { border: 2px solid var(--border); border-radius: 8px; padding: 6px 12px; text-align: center; font: 700 0.82rem var(--mono); color: var(--muted); transition: all 0.15s; }
+.estado small { display: block; font-size: 0.68rem; font-weight: 400; }
+.estado.on { border-color: var(--ws); color: var(--ws); background: color-mix(in srgb, var(--ws) 12%, transparent); }
+.estados .seta { color: var(--muted); }
+.log { list-style: none; margin: 0; padding: 8px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; font: 0.82rem var(--mono); max-height: 300px; min-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; }
+.log li { display: grid; grid-template-columns: 6.2em 7.5em minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.log .hora { color: var(--muted); }
+.log .tipo { font-weight: 700; }
+.log .txt { overflow-wrap: anywhere; }
+.log .t-open .tipo, .log .t-info .tipo { color: var(--ws); }
+.log .t-env .tipo { color: var(--sobe); }
+.log .t-rec .tipo { color: var(--desce); }
+.log .t-close .tipo, .log .t-error .tipo { color: var(--f-len); }
+.log .vazio-log { color: var(--muted); font-style: italic; display: block; }
+
+/* ---------- devtools ---------- */
+.passos { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 8px; }
+.passos li::marker { font-weight: 700; color: var(--accent); }
+kbd { font: 600 0.82em var(--mono); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface-2); }
+.seta-env { color: var(--sobe); font-weight: 700; }
+.seta-rec { color: var(--desce); font-weight: 700; }
+
+/* ---------- sistemas ---------- */
+.endereco { font: 700 1.6rem var(--mono); color: var(--accent); overflow-wrap: anywhere; }
+.dir { font: 700 0.75rem var(--mono); padding: 1px 7px; border-radius: 999px; color: #fff; white-space: nowrap; }
+.dir.d-env { background: var(--sobe); }
+.dir.d-rec { background: var(--desce); }
+.pista { position: relative; height: 120px; border-radius: 14px; background: linear-gradient(var(--surface-2), var(--surface-2)) center 78% / 100% 6px no-repeat, var(--surface); border: 1px solid var(--border); margin: 0 8px; }
+.jogador { position: absolute; bottom: 14px; transform: translateX(-50%); transition: left 60ms linear; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.jogador .corpo { width: 34px; height: 34px; border-radius: 10px; box-shadow: 0 2px 6px rgb(0 0 0 / 0.25); }
+.jogador .nome { font-size: 0.75rem; font-weight: 700; white-space: nowrap; background: var(--surface); padding: 0 6px; border-radius: 999px; border: 1px solid var(--border); }
+.pista .vazio-pista { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-style: italic; }
+
+.diagrama { width: 100%; height: auto; display: block; }
+.dg-caixa { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.3; }
+.dg-caixa.destaque { fill: color-mix(in srgb, var(--ws) 12%, var(--surface)); stroke: var(--ws); }
+.dg-caixa.http { fill: color-mix(in srgb, var(--http) 12%, var(--surface)); stroke: var(--http); }
+.dg-txt { font: 600 16px system-ui, sans-serif; fill: var(--text); }
+.dg-sub { font: 13px var(--mono); fill: var(--muted); }
+.dg-ponta.desce { fill: var(--desce); }
+.dg-lig { fill: none; stroke-width: 2; }
+.dg-lig.sobe { stroke: var(--sobe); }
+.dg-lig.desce { stroke: var(--desce); }
+.dg-lig.cinza { stroke: var(--vazio); stroke-dasharray: 5 4; }
+.dg-lig.ws { stroke: var(--ws); }
+.dg-rot { font: 700 13px var(--mono); }
+.dg-rot.sobe { fill: var(--sobe); }
+.dg-rot.desce { fill: var(--desce); }
+.dg-rot.ws { fill: var(--ws); }
+.dg-rot.erro { fill: var(--erro); }
+
+/* ---------- erro e rodape ---------- */
 .falha-caixa { border: 1px solid var(--erro); background: color-mix(in srgb, var(--erro) 8%, var(--surface)); border-radius: var(--raio); padding: 16px 20px; }
 .falha-caixa strong { color: var(--erro); }
 .falha-caixa pre { white-space: pre-wrap; font-size: 0.82rem; margin: 8px 0 0; }
@@ -433,8 +425,6 @@ details.ver-sql[open] summary { margin-bottom: 10px; }
 
 @media (max-width: 1100px) {
 	.grade-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-	.consulta-topo { grid-template-columns: minmax(0, 1fr); }
-	.venn-caixa { flex-direction: row; flex-wrap: wrap; justify-content: center; }
 }
 @media (max-width: 860px) {
 	html { font-size: 16px; }
@@ -446,11 +436,11 @@ details.ver-sql[open] summary { margin-bottom: 10px; }
 	.menu h4 { display: none; }
 	.menu a { white-space: nowrap; flex: none; }
 	.conteudo { padding: 20px 16px 32px; }
-	.grade-2, .grade-3, .antes-depois { grid-template-columns: minmax(0, 1fr); }
-	.grade-auto { grid-template-columns: minmax(0, 1fr); }
+	.grade-2, .grade-3 { grid-template-columns: minmax(0, 1fr); }
 	.pag-cab h1 { font-size: 1.6rem; }
-	.marca span { display: none; }
-	.saude { max-width: 40vw; }
+	.marca span, .link-sistema.extra { display: none; }
+	.log li { grid-template-columns: 5.6em minmax(0, 1fr); }
+	.log .hora { display: none; }
 }
 </style>
 </head>
@@ -458,12 +448,13 @@ details.ver-sql[open] summary { margin-bottom: 10px; }
 <header class="topo">
 	<button id="btn-menu" class="icone" title="Mostrar/ocultar o menu (tecla M)" aria-label="Mostrar ou ocultar o menu">☰</button>
 	<div class="marca">
-		<strong>Mini Atendimento</strong>
-		<span>Modelagem de dados com PostgreSQL</span>
+		<strong>WebSocket</strong>
+		<span>uma conexão aberta, os dois lados falam</span>
 	</div>
 	<div class="topo-dir">
-		<a class="link-sistema" href="/atendimento/" title="O sistema em uso, como um atendente vê">Abrir o sistema ↗</a>
-		<span id="saude" class="saude" title="Conexão do backend com o banco">verificando o banco…</span>
+		<a class="link-sistema" href="/chat/" target="_blank" title="O chat da aula">Chat ↗</a>
+		<a class="link-sistema extra" href="/jogo/" target="_blank" title="O joguinho">Jogo ↗</a>
+		<span id="saude" class="saude" title="Estado do backend">verificando o backend…</span>
 		<button id="btn-tema" class="icone" title="Alternar tema claro/escuro" aria-label="Alternar tema"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor"/></svg></button>
 	</div>
 </header>
@@ -476,36 +467,7 @@ details.ver-sql[open] summary { margin-bottom: 10px; }
 'use strict';
 
 /* =====================================================================
- * Modelo: espelho do schema.prisma, usado para desenhar os diagramas.
- * Cada coluna: [nome, tipo, ...marcas]. Marcas: PK, FK, UQ, CK, NULL.
- * ===================================================================== */
-const MODELO = {
-	clientes: [['id', 'INT', 'PK'], ['nome', 'TEXT'], ['email', 'TEXT', 'UQ'], ['criado_em', 'TIMESTAMP']],
-	atendentes: [['id', 'INT', 'PK'], ['nome', 'TEXT'], ['email', 'TEXT', 'UQ'], ['ativo', 'BOOLEAN']],
-	tickets: [
-		['id', 'INT', 'PK'],
-		['titulo', 'TEXT'],
-		['status', 'status_ticket'],
-		['cliente_id', 'INT', 'FK'],
-		['atendente_id', 'INT', 'FK', 'NULL'],
-		['criado_em', 'TIMESTAMP'],
-	],
-	avaliacoes: [['id', 'INT', 'PK'], ['ticket_id', 'INT', 'FK', 'UQ'], ['nota', 'INT', 'CK'], ['comentario', 'TEXT', 'NULL']],
-	tags: [['id', 'INT', 'PK'], ['nome', 'TEXT', 'UQ']],
-	tickets_tags: [['ticket_id', 'INT', 'PK', 'FK'], ['tag_id', 'INT', 'PK', 'FK']],
-};
-
-// de = coluna FK, para = coluna referenciada. card = cardinalidade em cada ponta.
-const LIGACOES = [
-	{ de: 'tickets.cliente_id', para: 'clientes.id', tipo: '1n', cardDe: 'N', cardPara: '1' },
-	{ de: 'tickets.atendente_id', para: 'atendentes.id', tipo: '1n', cardDe: 'N', cardPara: '0..1' },
-	{ de: 'avaliacoes.ticket_id', para: 'tickets.id', tipo: '11', cardDe: '0..1', cardPara: '1' },
-	{ de: 'tickets_tags.ticket_id', para: 'tickets.id', tipo: 'nm', cardDe: 'N', cardPara: '1' },
-	{ de: 'tickets_tags.tag_id', para: 'tags.id', tipo: 'nm', cardDe: 'N', cardPara: '1' },
-];
-
-/* =====================================================================
- * Utilitarios de DOM e de API
+ * Utilitarios de DOM, de API e de WebSocket
  * ===================================================================== */
 function el(tag, props, ...filhos) {
 	const no = document.createElement(tag);
@@ -530,46 +492,73 @@ function escapar(texto) {
 async function api(caminho, opcoes) {
 	const resposta = await fetch(caminho, opcoes);
 	const corpo = await resposta.json().catch(() => ({}));
-	if (!resposta.ok) throw new Error(corpo.motivo || corpo.message || `HTTP ${resposta.status} em ${caminho}`);
+	if (!resposta.ok) throw new Error(corpo.message || `HTTP ${resposta.status} em ${caminho}`);
 	return corpo;
+}
+
+// Pagina em https precisa de wss:// (o navegador bloqueia ws:// numa pagina segura).
+function urlWs(caminho) {
+	return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${caminho}`;
+}
+
+// No formato que o NestJS (WsAdapter) espera: {"event": "...", "data": ...}
+function mandar(ws, event, data) {
+	if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ event, data }));
+}
+
+function horaAgora() {
+	const d = new Date();
+	return `${d.toLocaleTimeString('pt-BR')}.${String(d.getMilliseconds()).padStart(3, '0').slice(0, 1)}`;
+}
+
+function lerNome() {
+	try {
+		return localStorage.getItem('nome') || '';
+	} catch {
+		return '';
+	}
+}
+
+// Cada pagina pode abrir WebSockets e timers. Ao trocar de pagina, tudo e fechado.
+let limpezas = [];
+function aoSair(fn) {
+	limpezas.push(fn);
+}
+function limparPagina() {
+	for (const fn of limpezas.splice(0)) {
+		try {
+			fn();
+		} catch {}
+	}
 }
 
 /* =====================================================================
  * Realce de sintaxe (simples, so o suficiente para leitura em aula)
  * ===================================================================== */
-const SQL_JUNCOES = ['FULL OUTER JOIN', 'RIGHT JOIN', 'INNER JOIN', 'LEFT JOIN', 'UNION ALL', 'UNION', 'JOIN'];
-const SQL_PALAVRAS = [
-	'CREATE TABLE', 'PRIMARY KEY', 'FOREIGN KEY', 'INSERT INTO', 'DELETE FROM', 'ON DELETE', 'ORDER BY', 'GROUP BY',
-	'REFERENCES', 'RETURNING', 'TIMESTAMP', 'DISTINCT', 'RESTRICT', 'CASCADE', 'BETWEEN', 'BOOLEAN', 'DEFAULT',
-	'SELECT', 'VALUES', 'UPDATE', 'UNIQUE', 'SERIAL', 'WHERE', 'CHECK', 'LIMIT', 'FROM', 'NULL', 'TEXT', 'CASE',
-	'WHEN', 'THEN', 'ELSE', 'AND', 'NOT', 'SET', 'END', 'INT', 'AS', 'OR', 'IS', 'IN', 'ON',
+const PALAVRAS_JS = [
+	'const', 'let', 'new', 'return', 'this', 'true', 'false', 'null', 'await', 'async', 'function', 'if', 'else', 'for', 'of',
+	'import', 'from', 'export', 'class', 'private', 'readonly', 'constructor', 'throw', 'typeof', 'implements', 'continue',
 ];
-const RE_SQL = new RegExp(
-	`('(?:[^']|'')*')|(--[^\\n]*)|\\b(${SQL_JUNCOES.join('|').replace(/ /g, '\\s+')})\\b|\\b(${SQL_PALAVRAS.join('|').replace(/ /g, '\\s+')})\\b|\\b(\\d+)\\b`,
-	'g',
-);
 
-function realcarSql(sql) {
-	return escapar(sql).replace(RE_SQL, (m, texto, comentario, juncao, palavra, numero) => {
-		if (texto) return `<span class="hl-s">${texto}</span>`;
+function realcarJs(codigo) {
+	const re = new RegExp(`(\\/\\/[^\\n]*)|('(?:[^'\\\\\\n]|\\\\.)*'|"(?:[^"\\\\\\n]|\\\\.)*"|\`[^\`]*\`)|(@\\w+)|\\b(${PALAVRAS_JS.join('|')})\\b|\\b(\\d+)\\b`, 'g');
+	return escapar(codigo).replace(re, (m, comentario, texto, decorador, palavra, numero) => {
 		if (comentario) return `<span class="hl-c">${comentario}</span>`;
-		if (juncao) return `<span class="hl-j">${juncao}</span>`;
+		if (texto) return `<span class="hl-s">${texto}</span>`;
+		if (decorador) return `<span class="hl-a">${decorador}</span>`;
 		if (palavra) return `<span class="hl-k">${palavra}</span>`;
 		return `<span class="hl-n">${numero}</span>`;
 	});
 }
 
-function realcarCodigo(codigo) {
-	return escapar(codigo).replace(
-		/(\/\/[^\n]*)|("[^"\n]*"|'[^'\n]*')|(@@?\w+)|\b(model|enum|return|this|true|false|const|await|async)\b|\b(Int|String|Boolean|DateTime)\b/g,
-		(m, comentario, texto, atributo, palavra, tipo) => {
-			if (comentario) return `<span class="hl-c">${comentario}</span>`;
-			if (texto) return `<span class="hl-s">${texto}</span>`;
-			if (atributo) return `<span class="hl-a">${atributo}</span>`;
-			if (palavra) return `<span class="hl-k">${palavra}</span>`;
-			return `<span class="hl-t">${tipo}</span>`;
-		},
-	);
+// Nginx e terminal: comentario com #.
+function realcarConf(codigo) {
+	return escapar(codigo).replace(/(#[^\n]*)|('[^'\n]*'|"[^"\n]*")|^(\s*[\w-]+)|(\$\w+)/gm, (m, comentario, texto, diretiva, variavel) => {
+		if (comentario) return `<span class="hl-c">${comentario}</span>`;
+		if (texto) return `<span class="hl-s">${texto}</span>`;
+		if (diretiva) return `<span class="hl-k">${diretiva}</span>`;
+		return `<span class="hl-a">${variavel}</span>`;
+	});
 }
 
 function realcarJson(objeto) {
@@ -584,254 +573,9 @@ function realcarJson(objeto) {
 	);
 }
 
-function codigo(texto, { linguagem = 'sql', titulo, grande } = {}) {
-	const html = linguagem === 'sql' ? realcarSql(texto) : linguagem === 'json' ? realcarJson(texto) : realcarCodigo(texto);
-	return el('figure', { class: `codigo${grande ? ' grande' : ''}` }, titulo && el('figcaption', {}, titulo), el('pre', { html }));
-}
-
-/* =====================================================================
- * Tabelas de dados
- * ===================================================================== */
-function valor(v) {
-	if (v === null || v === undefined) return el('span', { class: 'nulo' }, 'NULL');
-	if (typeof v === 'boolean') return el('span', { class: 'bool' }, String(v));
-	// Datas chegam em ISO/UTC. Mostramos em UTC, igual ao que o psql mostra.
-	if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) return `${v.slice(8, 10)}/${v.slice(5, 7)} ${v.slice(11, 16)}`;
-	return String(v);
-}
-
-function marcasDe(tabelaNome, coluna) {
-	const definicao = (MODELO[tabelaNome] || []).find(([nome]) => nome === coluna);
-	return definicao ? definicao.slice(2).filter((m) => ['PK', 'FK', 'UQ'].includes(m)) : [];
-}
-
-// opcoes: colunas, nome (tabela do banco, para mostrar PK/FK), destaque (colunas realcadas),
-// grupos (cabecalho agrupando colunas), classeLinha(linha), aoCriarLinha(linha, tr)
-function tabela(linhas, opcoes = {}) {
-	const colunas = opcoes.colunas || (linhas.length ? Object.keys(linhas[0]) : []);
-	const destaque = opcoes.destaque || [];
-	const classeCol = (c) => (destaque.includes(c) ? 'col-on' : null);
-
-	const thead = el('thead');
-	if (opcoes.grupos) {
-		thead.append(el('tr', { class: 'grupos' }, opcoes.grupos.map((g) => el('th', { colspan: g.colunas.length, class: g.classe }, g.rotulo))));
-	}
-	thead.append(
-		el('tr', {}, colunas.map((c) => el('th', { class: classeCol(c) }, c, opcoes.nome && marcasDe(opcoes.nome, c).map((m) => el('span', { class: `marca-col m-${m.toLowerCase()}` }, m))))),
-	);
-
-	const tbody = el('tbody');
-	for (const linha of linhas) {
-		const tr = el('tr', { class: opcoes.classeLinha?.(linha) }, colunas.map((c) => el('td', { class: classeCol(c) }, valor(linha[c]))));
-		opcoes.aoCriarLinha?.(linha, tr);
-		tbody.append(tr);
-	}
-	if (!linhas.length) tbody.append(el('tr', {}, el('td', { colspan: Math.max(colunas.length, 1), class: 'vazio' }, 'nenhuma linha')));
-
-	return el('div', { class: 'tabela-wrap' }, el('table', {}, thead, tbody));
-}
-
-function tituloTabela(nome, { papel, qtd, sql } = {}) {
-	return el(
-		'div',
-		{ class: 'titulo-tabela' },
-		papel && el('span', { class: `papel p-${papel.toLowerCase()}` }, papel),
-		el('strong', {}, nome),
-		qtd != null && el('span', { class: 'qtd' }, `${qtd} ${qtd === 1 ? 'linha' : 'linhas'}`),
-		sql && el('span', { class: 'sql-mini' }, sql),
-	);
-}
-
-// Passar o mouse numa linha acende as linhas ligadas a ela pelas FKs,
-// seguindo as ligacoes sem voltar para uma tabela ja visitada.
-function relacionados(tabelaNome, linha, dados, ligacoes) {
-	const achados = [];
-	const visitadas = new Set([tabelaNome]);
-	let fronteira = [[tabelaNome, linha]];
-	while (fronteira.length) {
-		const proxima = [];
-		const novas = new Set();
-		for (const [t, l] of fronteira) {
-			for (const lig of ligacoes) {
-				const [dt, dc] = lig.de.split('.');
-				const [pt, pc] = lig.para.split('.');
-				if (dt === t && !visitadas.has(pt) && l[dc] != null) {
-					for (const x of dados[pt] || []) if (x[pc] === l[dc]) proxima.push([pt, x]), novas.add(pt);
-				}
-				if (pt === t && !visitadas.has(dt)) {
-					for (const x of dados[dt] || []) if (x[dc] === l[pc]) proxima.push([dt, x]), novas.add(dt);
-				}
-			}
-		}
-		novas.forEach((t) => visitadas.add(t));
-		achados.push(...proxima);
-		fronteira = proxima;
-	}
-	return achados;
-}
-
-function limparFoco() {
-	document.querySelectorAll('tr.foco, tr.ligado').forEach((tr) => tr.classList.remove('foco', 'ligado'));
-}
-
-function ligarPorFk(registro, dados, ligacoes) {
-	for (const [nome, itens] of registro) {
-		for (const { linha, tr } of itens) {
-			tr.addEventListener('mouseenter', () => {
-				tr.classList.add('foco');
-				for (const [t, l] of relacionados(nome, linha, dados, ligacoes)) {
-					registro.get(t)?.find((item) => item.linha === l)?.tr.classList.add('ligado');
-				}
-			});
-			tr.addEventListener('mouseleave', limparFoco);
-		}
-	}
-}
-
-/* =====================================================================
- * Diagrama ER (SVG)
- * ===================================================================== */
-const CAIXA = { largura: 220, topo: 34, linha: 26 };
-
-function desenharER(posicoes, largura, altura) {
-	const caixa = (nome) => {
-		const [x, y] = posicoes[nome];
-		return { x, y, w: CAIXA.largura, h: CAIXA.topo + MODELO[nome].length * CAIXA.linha };
-	};
-	const yColuna = (nome, coluna) => {
-		const i = MODELO[nome].findIndex(([n]) => n === coluna);
-		return caixa(nome).y + CAIXA.topo + i * CAIXA.linha + CAIXA.linha / 2;
-	};
-
-	let ligacoes = '';
-	for (const lig of LIGACOES) {
-		const [dt, dc] = lig.de.split('.');
-		const [pt, pc] = lig.para.split('.');
-		if (!posicoes[dt] || !posicoes[pt]) continue;
-		const a = caixa(dt);
-		const b = caixa(pt);
-		const s = b.x > a.x ? 1 : -1;
-		const x1 = s > 0 ? a.x + a.w : a.x;
-		const x2 = s > 0 ? b.x : b.x + b.w;
-		const y1 = yColuna(dt, dc);
-		const y2 = yColuna(pt, pc);
-		const d = Math.max(34, Math.abs(x2 - x1) / 2);
-		ligacoes += `<path class="er-lig rel-${lig.tipo}" d="M${x1} ${y1} C${x1 + s * d} ${y1} ${x2 - s * d} ${y2} ${x2} ${y2}"/>`;
-		ligacoes += `<circle class="er-ponta rel-${lig.tipo}" cx="${x1}" cy="${y1}" r="3.5"/><circle class="er-ponta rel-${lig.tipo}" cx="${x2}" cy="${y2}" r="3.5"/>`;
-		ligacoes += `<text class="er-card rel-${lig.tipo}" x="${x1 + s * 8}" y="${y1 - 7}" text-anchor="${s > 0 ? 'start' : 'end'}">${lig.cardDe}</text>`;
-		ligacoes += `<text class="er-card rel-${lig.tipo}" x="${x2 - s * 8}" y="${y2 - 7}" text-anchor="${s > 0 ? 'end' : 'start'}">${lig.cardPara}</text>`;
-	}
-
-	let caixas = '';
-	for (const nome of Object.keys(posicoes)) {
-		const { x, y, w, h } = caixa(nome);
-		const t = CAIXA.topo;
-		caixas += `<g><rect class="er-caixa" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/>`;
-		caixas += `<path class="er-cabeca" d="M${x + 0.6} ${y + t} V${y + 8} Q${x + 0.6} ${y + 0.6} ${x + 8} ${y + 0.6} H${x + w - 8} Q${x + w - 0.6} ${y + 0.6} ${x + w - 0.6} ${y + 8} V${y + t} Z"/>`;
-		caixas += `<text class="er-nome" x="${x + 12}" y="${y + 22}">${nome}</text>`;
-		MODELO[nome].forEach(([coluna, tipo, ...marcas], i) => {
-			const yl = y + t + i * CAIXA.linha;
-			caixas += `<line class="er-sep" x1="${x}" x2="${x + w}" y1="${yl}" y2="${yl}"/>`;
-			caixas += `<text class="er-col${marcas.includes('PK') ? ' er-pk' : ''}" x="${x + 12}" y="${yl + 17}">${coluna}</text>`;
-			caixas += `<text class="er-tipo" x="${x + 112}" y="${yl + 17}">${tipo}</text>`;
-			let xb = x + w - 10;
-			for (const marca of [...marcas].reverse()) {
-				const bw = 10 + marca.length * 6.5;
-				xb -= bw;
-				const m = marca.toLowerCase();
-				caixas += `<rect class="er-badge b-${m}" x="${xb}" y="${yl + 6}" width="${bw}" height="15" rx="4"/>`;
-				caixas += `<text class="er-badge-txt t-${m}" x="${xb + bw / 2}" y="${yl + 17}" text-anchor="middle">${marca}</text>`;
-				xb -= 4;
-			}
-		});
-		caixas += '</g>';
-	}
-
-	return el('div', {
-		html: `<svg class="er" viewBox="0 0 ${largura} ${altura}" style="max-width:${largura}px" role="img" aria-label="Diagrama entidade-relacionamento">${ligacoes}${caixas}</svg>`,
-	});
-}
-
-function legendaER() {
-	return el(
-		'div',
-		{ class: 'legenda-er' },
-		el('span', {}, el('i', { class: 'traco rel-1n' }), '1:N'),
-		el('span', {}, el('i', { class: 'traco rel-11' }), '1:1'),
-		el('span', {}, el('i', { class: 'traco rel-nm' }), 'N:M (pela tabela associativa)'),
-		el('span', {}, el('b', { class: 'selo s-pk' }, 'PK'), 'chave primária'),
-		el('span', {}, el('b', { class: 'selo s-fk' }, 'FK'), 'chave estrangeira'),
-		el('span', {}, el('b', { class: 'selo s-uq' }, 'UQ'), 'UNIQUE'),
-		el('span', {}, el('b', { class: 'selo s-ck' }, 'CK'), 'CHECK'),
-		el('span', {}, el('b', { class: 'selo s-null' }, 'NULL'), 'aceita NULL (o resto é NOT NULL)'),
-	);
-}
-
-/* =====================================================================
- * Diagrama de Venn
- * ===================================================================== */
-function venn(tipo, nomeA, nomeB) {
-	const id = `v${Math.random().toString(36).slice(2, 8)}`;
-	if (tipo === 'select') {
-		return el('div', {
-			html: `<svg class="venn" viewBox="0 0 340 220" role="img" aria-label="Uma tabela filtrada pelo WHERE">
-				<circle class="regiao" cx="170" cy="104" r="92"/>
-				<circle class="regiao on r-a" cx="196" cy="122" r="50"/>
-				<circle class="contorno" cx="170" cy="104" r="92"/>
-				<circle class="contorno" cx="196" cy="122" r="50" stroke-dasharray="5 4"/>
-				<text class="letra" x="112" y="84">A</text>
-				<text class="rot-where" x="196" y="126" text-anchor="middle">WHERE</text>
-				<text class="nome" x="170" y="214" text-anchor="middle">${nomeA}</text>
-			</svg>`,
-		});
-	}
-	const ativos = REGIOES[tipo];
-	const on = (r) => (ativos.includes(r) ? ' on' : '');
-	return el('div', {
-		html: `<svg class="venn" viewBox="0 0 340 220" role="img" aria-label="Diagrama de Venn do ${tipo}">
-			<defs>
-				<clipPath id="${id}-a"><circle cx="125" cy="104" r="80"/></clipPath>
-				<mask id="${id}-sem-a"><rect width="340" height="220" fill="white"/><circle cx="125" cy="104" r="80" fill="black"/></mask>
-				<mask id="${id}-sem-b"><rect width="340" height="220" fill="white"/><circle cx="215" cy="104" r="80" fill="black"/></mask>
-			</defs>
-			<circle class="regiao r-a${on('a')}" cx="125" cy="104" r="80" mask="url(#${id}-sem-b)"/>
-			<circle class="regiao r-b${on('b')}" cx="215" cy="104" r="80" mask="url(#${id}-sem-a)"/>
-			<circle class="regiao r-ab${on('ab')}" cx="215" cy="104" r="80" clip-path="url(#${id}-a)"/>
-			<circle class="contorno" cx="125" cy="104" r="80"/>
-			<circle class="contorno" cx="215" cy="104" r="80"/>
-			<text class="letra" x="82" y="113" text-anchor="middle">A</text>
-			<text class="letra" x="258" y="113" text-anchor="middle">B</text>
-			<text class="nome" x="20" y="212">${nomeA}</text>
-			<text class="nome" x="320" y="212" text-anchor="end">${nomeB}</text>
-		</svg>`,
-	});
-}
-
-const REGIOES = { inner: ['ab'], left: ['a', 'ab'], right: ['ab', 'b'], full: ['a', 'ab', 'b'], union: ['a', 'ab', 'b'] };
-
-function legendaVenn(cfg) {
-	if (cfg.tipo === 'select') {
-		return el(
-			'ul',
-			{ class: 'legenda' },
-			el('li', { class: 'entra' }, el('span', { class: 'amostra reg-a' }), cfg.legenda.a, el('span', { class: 'status' }, 'entra')),
-			el('li', { class: 'sai' }, el('span', { class: 'amostra reg-fora' }), cfg.legenda.fora, el('span', { class: 'status' }, 'fica de fora')),
-		);
-	}
-	const ativos = REGIOES[cfg.tipo];
-	return el(
-		'ul',
-		{ class: 'legenda' },
-		['a', 'ab', 'b'].map((r) =>
-			el(
-				'li',
-				{ class: ativos.includes(r) ? 'entra' : 'sai' },
-				el('span', { class: `amostra reg-${r}` }),
-				cfg.legenda[r],
-				el('span', { class: 'status' }, ativos.includes(r) ? 'entra' : 'fica de fora'),
-			),
-		),
-	);
+function codigo(texto, { linguagem = 'js', titulo } = {}) {
+	const html = linguagem === 'json' ? realcarJson(texto) : linguagem === 'conf' ? realcarConf(texto) : realcarJs(texto);
+	return el('figure', { class: 'codigo' }, titulo && el('figcaption', {}, titulo), el('pre', { html }));
 }
 
 /* =====================================================================
@@ -847,8 +591,8 @@ function cabecalho(grupo, titulo, subtitulo, lead) {
 	);
 }
 
-function pergunta(texto) {
-	return el('div', { class: 'pergunta' }, el('span', { class: 'rot' }, 'Pergunta de negócio'), el('p', {}, texto));
+function pergunta(texto, rotulo = 'Pergunta') {
+	return el('div', { class: 'pergunta' }, el('span', { class: 'rot' }, rotulo), el('p', {}, texto));
 }
 
 function nota(tipo, rotulo, conteudo, extra) {
@@ -865,758 +609,1204 @@ function secao(titulo, ajuda, ...filhos) {
 	return el('section', { class: 'secao' }, el('h2', {}, titulo), ajuda && el('p', { class: 'ajuda' }, ajuda), filhos);
 }
 
+function cartao(titulo, ...filhos) {
+	return el('div', { class: 'cartao' }, titulo && el('h3', {}, titulo), filhos);
+}
+
+function comClasse(no, classe) {
+	no.classList.add(classe);
+	return no;
+}
+
+function tabelaSimples(cabecas, linhas, classes = []) {
+	return el(
+		'div',
+		{ class: 'tabela-wrap' },
+		el(
+			'table',
+			{},
+			el('thead', {}, el('tr', {}, cabecas.map((c) => el('th', {}, c)))),
+			el('tbody', {}, linhas.map((linha) => el('tr', {}, linha.map((celula, i) => el('td', { class: classes[i] }, celula))))),
+		),
+	);
+}
+
+function contador(rotulo, classe) {
+	const valor = el('b', {}, '0');
+	return { no: el('div', { class: `contador ${classe || ''}` }, valor, el('span', {}, rotulo)), valor };
+}
+
 function caixaErro(erro) {
 	return el(
 		'div',
 		{ class: 'falha-caixa' },
 		el('strong', {}, 'Não consegui carregar esta página.'),
-		el('p', {}, 'Confira se o backend está de pé e conectado ao banco (o indicador no topo mostra o estado).'),
+		el('p', {}, 'Confira se o backend está de pé (o indicador no topo mostra o estado).'),
 		el('pre', {}, erro?.message || String(erro)),
 	);
 }
 
 /* =====================================================================
- * Pagina: modelagem
+ * Diagrama de sequencia: Navegador e Servidor, mensagens de cima para baixo.
+ * passo: { de: 'n' | 's', texto, tipo: 'http' | 'vazio' | 'ws' } ou { nota }
+ * Os passos do tipo 'ws' ficam dentro de uma faixa: a conexao aberta.
  * ===================================================================== */
-const POSICOES_ER = {
-	clientes: [10, 10],
-	avaliacoes: [10, 222],
-	tickets: [300, 70],
-	atendentes: [590, 10],
-	tickets_tags: [590, 240],
-	tags: [880, 240],
-};
+function sequencia(passos, { largura = 380, passo = 40 } = {}) {
+	const xN = 70;
+	const xS = largura - 70;
+	let y = 66;
+	let corpo = '';
+	let faixaIni = null;
+	let faixaFim = null;
+	for (const p of passos) {
+		if (p.nota) {
+			corpo += `<text class="seq-nota" x="${largura / 2}" y="${y - 4}" text-anchor="middle">${escapar(p.nota)}</text>`;
+			y += passo * 0.7;
+			continue;
+		}
+		const x1 = p.de === 'n' ? xN : xS;
+		const x2 = p.de === 'n' ? xS : xN;
+		const s = Math.sign(x2 - x1);
+		if (p.tipo === 'ws') {
+			faixaIni ??= y - 26;
+			faixaFim = y + 26;
+		}
+		corpo += `<line class="seq-seta ${p.tipo}" x1="${x1}" y1="${y}" x2="${x2 - s * 8}" y2="${y}"/>`;
+		corpo += `<path class="${p.tipo}" d="M${x2} ${y} l${-s * 10} -5 v10 z"/>`;
+		corpo += `<text class="seq-texto ${p.tipo}" x="${(x1 + x2) / 2}" y="${y - 7}" text-anchor="middle">${escapar(p.texto)}</text>`;
+		y += passo;
+	}
+	const altura = y - passo / 2 + 10;
+	let fundo = '';
+	for (const [x, nome] of [[xN, 'Navegador'], [xS, 'Servidor']]) {
+		fundo += `<line class="seq-vida" x1="${x}" x2="${x}" y1="36" y2="${altura}"/>`;
+		fundo += `<rect class="seq-ator" x="${x - 56}" y="4" width="112" height="32" rx="8"/><text class="seq-ator-txt" x="${x}" y="25" text-anchor="middle">${nome}</text>`;
+	}
+	if (faixaIni != null) {
+		fundo += `<rect class="seq-faixa" x="${xN - 14}" y="${faixaIni}" width="${xS - xN + 28}" height="${faixaFim - faixaIni}" rx="8"/>`;
+		fundo += `<text class="seq-faixa-txt" x="${largura / 2}" y="${faixaFim - 7}" text-anchor="middle">CONEXÃO ABERTA</text>`;
+	}
+	return el('div', { html: `<svg class="seq" viewBox="0 0 ${largura} ${altura}" role="img" aria-label="Diagrama de sequência">${fundo}${corpo}</svg>` });
+}
 
-async function paginaModelagem(corpo) {
-	const tabelas = await api('/api/tabelas');
-	const dados = Object.fromEntries(Object.entries(tabelas).map(([nome, t]) => [nome, t.dados]));
-	const registro = new Map();
-
+/* =====================================================================
+ * 1. O problema
+ * ===================================================================== */
+function paginaProblema(corpo) {
 	corpo.append(
 		cabecalho(
-			'Modelagem',
-			'O modelo de dados',
-			'mini sistema de atendimento',
-			'Clientes abrem tickets. Atendentes cuidam dos tickets. O cliente pode avaliar o atendimento, e os tickets recebem tags para organizar a fila.',
+			'O problema',
+			'No HTTP, quem pergunta é sempre o navegador',
+			'request → response',
+			'O servidor responde, mas nunca começa a conversa. Para uma página de notícias, ótimo. Para um chat, um jogo ou um painel ao vivo, o servidor precisa avisar o navegador no momento em que algo acontece.',
 		),
+		pergunta('Chegou uma mensagem nova no chat. Como o servidor avisa o navegador da Ana, se ela não perguntou nada?'),
 		el(
 			'div',
 			{ class: 'grade-3' },
-			nota('', 'Entidades → tabelas', ['Cada coisa do negócio que precisa ser lembrada vira uma tabela.', 'Cada característica dela vira uma coluna, com um tipo.']),
-			nota('', 'Identidade', ['Toda tabela tem uma PRIMARY KEY: o valor que identifica uma linha.', 'Aqui usamos um id numérico gerado pelo banco (SERIAL).']),
-			nota('', 'Relações', ['Uma FOREIGN KEY guarda a PK de outra tabela.', 'É ela que liga as tabelas e garante que a referência existe.']),
-		),
-		el('div', { class: 'cartao' }, desenharER(POSICOES_ER, 1110, 370), legendaER()),
-		secao(
-			'Os dados',
-			'Passe o mouse sobre uma linha para acender tudo o que está ligado a ela pelas chaves estrangeiras.',
-			el(
-				'div',
-				{ class: 'grade-dados passe-mouse' },
-				Object.entries(tabelas).map(([nome, t]) => {
-					const itens = [];
-					registro.set(nome, itens);
-					return el(
-						'div',
-						{ class: `cartao${nome === 'tickets' ? ' largo' : ''}` },
-						tituloTabela(nome, { qtd: t.dados.length, sql: t.sql }),
-						tabela(t.dados, { nome, colunas: MODELO[nome].map(([c]) => c), aoCriarLinha: (linha, tr) => itens.push({ linha, tr }) }),
-					);
-				}),
+			cartao(
+				'HTTP comum',
+				sequencia([
+					{ de: 'n', texto: 'GET /api/mensagens', tipo: 'http' },
+					{ de: 's', texto: '200 OK [ ... ]', tipo: 'http' },
+					{ nota: 'e acabou: o servidor não fala mais' },
+				]),
+				el('p', { class: 'rodape-cartao' }, 'Uma pergunta, uma resposta. Mensagem que chegar depois, o navegador só vê se perguntar de novo.'),
 			),
-		),
-	);
-	ligarPorFk(registro, dados, LIGACOES);
-}
-
-/* =====================================================================
- * Paginas: relacoes
- * ===================================================================== */
-const RELACOES = {
-	'um-para-muitos': {
-		titulo: '1:N',
-		subtitulo: 'um para muitos · clientes → tickets',
-		frase: 'Um cliente abre vários tickets. Cada ticket pertence a um único cliente.',
-		posicoes: { clientes: [10, 10], tickets: [300, 10] },
-		tamanho: [530, 210],
-		como: [
-			'A chave estrangeira fica sempre no lado N: é tickets.cliente_id que aponta para clientes.id.',
-			'NOT NULL na FK deixa a relação obrigatória: não existe ticket sem cliente.',
-			'atendentes → tickets também é 1:N, só que opcional: atendente_id aceita NULL, e o ticket fica na fila.',
-		],
-		cuidado:
-			'Por que não guardar os tickets numa coluna de clientes, tipo "1,6"? Porque o banco não consegue validar, indexar nem fazer JOIN com um texto. Uma coluna guarda um valor só (1ª forma normal).',
-		ddl: `CREATE TABLE clientes (
-  id    SERIAL PRIMARY KEY,
-  nome  TEXT NOT NULL,
-  email TEXT NOT NULL UNIQUE
-);
-
-CREATE TABLE tickets (
-  id         SERIAL PRIMARY KEY,
-  titulo     TEXT NOT NULL,
-  cliente_id INT  NOT NULL REFERENCES clientes (id) ON DELETE RESTRICT
-);`,
-		prisma: `model Cliente {
-  id      Int      @id @default(autoincrement())
-  nome    String
-  email   String   @unique
-  tickets Ticket[] // lado 1: não vira coluna, existe só no código
-}
-
-model Ticket {
-  id        Int     @id @default(autoincrement())
-  titulo    String
-  clienteId Int     @map("cliente_id") // a FK de verdade
-  cliente   Cliente @relation(fields: [clienteId], references: [id], onDelete: Restrict)
-}`,
-		tabelas: [
-			{ nome: 'clientes', colunas: ['id', 'nome', 'email'], destaque: ['id'] },
-			{ nome: 'tickets', colunas: ['id', 'titulo', 'cliente_id'], destaque: ['cliente_id'] },
-		],
-		grupos: [
-			{ rotulo: 'clientes', colunas: ['cliente_id', 'cliente'] },
-			{ rotulo: 'tickets', colunas: ['ticket_id', 'titulo'] },
-		],
-		repare: ['Fernanda, Gustavo e Helena aparecem duas vezes: uma linha para cada ticket.', 'Igor não aparece: ele não abriu nenhum ticket, e o JOIN só traz o que casa.'],
-	},
-	'um-para-um': {
-		titulo: '1:1',
-		subtitulo: 'um para um · tickets → avaliacoes',
-		frase: 'Um ticket tem no máximo uma avaliação. Cada avaliação é de um único ticket.',
-		posicoes: { tickets: [10, 10], avaliacoes: [300, 10] },
-		tamanho: [530, 210],
-		como: [
-			'É uma FK igual à da 1:N, com um UNIQUE a mais: avaliacoes.ticket_id não pode se repetir.',
-			'Sem o UNIQUE, um ticket poderia ter várias avaliações, e a relação viraria 1:N.',
-			'A FK fica do lado que depende do outro: ticket existe sem avaliação, avaliação não existe sem ticket.',
-		],
-		cuidado:
-			'Por que não colocar nota e comentario direto em tickets? Porque a maioria dos tickets não tem avaliação: seriam colunas quase sempre NULL. Outro uso comum de 1:1 é separar dados sensíveis, como usuarios e credenciais.',
-		ddl: `CREATE TABLE avaliacoes (
-  id         SERIAL PRIMARY KEY,
-  ticket_id  INT  NOT NULL UNIQUE REFERENCES tickets (id) ON DELETE CASCADE,
-  nota       INT  NOT NULL CHECK (nota BETWEEN 1 AND 5),
-  comentario TEXT
-);`,
-		prisma: `model Ticket {
-  id        Int        @id @default(autoincrement())
-  avaliacao Avaliacao? // no máximo uma
-}
-
-model Avaliacao {
-  id         Int     @id @default(autoincrement())
-  ticketId   Int     @unique @map("ticket_id") // o @unique faz ser 1:1
-  ticket     Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  nota       Int     // o CHECK fica na migration
-  comentario String?
-}`,
-		tabelas: [
-			{ nome: 'tickets', colunas: ['id', 'titulo', 'status'], destaque: ['id'] },
-			{ nome: 'avaliacoes', colunas: ['id', 'ticket_id', 'nota', 'comentario'], destaque: ['ticket_id'] },
-		],
-		grupos: [
-			{ rotulo: 'tickets', colunas: ['ticket_id', 'titulo'] },
-			{ rotulo: 'avaliacoes', colunas: ['avaliacao_id', 'nota', 'comentario'] },
-		],
-		repare: ['Cada ticket aparece no máximo uma vez: é o UNIQUE trabalhando.', 'O ticket 4 está fechado, mas não foi avaliado: do lado da avaliação a relação é 0..1.'],
-	},
-	'muitos-para-muitos': {
-		titulo: 'N:M',
-		subtitulo: 'muitos para muitos · tickets ↔ tags',
-		frase: 'Um ticket pode ter várias tags, e uma tag pode estar em vários tickets.',
-		posicoes: { tickets: [10, 10], tickets_tags: [300, 10], tags: [590, 10] },
-		tamanho: [820, 210],
-		como: [
-			'Não dá para resolver com uma FK só: em qual das duas tabelas ela ficaria? Uma coluna não guarda "vários".',
-			'A saída é uma tabela associativa, tickets_tags, com uma FK para cada lado. A N:M vira duas 1:N.',
-			'A PRIMARY KEY é composta, (ticket_id, tag_id): o mesmo par não aparece duas vezes.',
-		],
-		cuidado:
-			'O Prisma também aceita a forma implícita (Tag[] em Ticket e Ticket[] em Tag): ele cria a tabela sozinho, com colunas chamadas A e B. A forma explícita é mais clara e permite colunas extras, como a data em que a tag foi colocada.',
-		ddl: `CREATE TABLE tags (
-  id   SERIAL PRIMARY KEY,
-  nome TEXT NOT NULL UNIQUE
-);
-
-CREATE TABLE tickets_tags (
-  ticket_id INT NOT NULL REFERENCES tickets (id) ON DELETE CASCADE,
-  tag_id    INT NOT NULL REFERENCES tags (id)    ON DELETE CASCADE,
-  PRIMARY KEY (ticket_id, tag_id)
-);`,
-		prisma: `model Tag {
-  id      Int         @id @default(autoincrement())
-  nome    String      @unique
-  tickets TicketTag[]
-}
-
-model TicketTag {
-  ticketId Int    @map("ticket_id")
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  tagId    Int    @map("tag_id")
-  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([ticketId, tagId]) // PK composta
-  @@map("tickets_tags")
-}`,
-		tabelas: [
-			{ nome: 'tickets', colunas: ['id', 'titulo'], destaque: ['id'] },
-			{ nome: 'tickets_tags', colunas: ['ticket_id', 'tag_id'], destaque: ['ticket_id', 'tag_id'] },
-			{ nome: 'tags', colunas: ['id', 'nome'], destaque: ['id'] },
-		],
-		grupos: [
-			{ rotulo: 'tickets', colunas: ['ticket_id', 'titulo'] },
-			{ rotulo: 'tags', colunas: ['tag_id', 'tag'] },
-		],
-		repare: ['A consulta passa pela tabela associativa: são dois JOINs.', 'A tag "sugestão" não aparece porque ninguém usou. Os tickets 4 e 7 também não, porque não têm tag.'],
-	},
-};
-
-async function paginaRelacao(chave, corpo) {
-	const cfg = RELACOES[chave];
-	const [tabelas, resultado] = await Promise.all([api('/api/tabelas'), api(`/api/relacoes/${chave}`)]);
-	const dados = Object.fromEntries(Object.entries(tabelas).map(([nome, t]) => [nome, t.dados]));
-	const registro = new Map();
-
-	corpo.append(
-		cabecalho('Relações', cfg.titulo, cfg.subtitulo, cfg.frase),
-		el('div', { class: 'cartao' }, desenharER(cfg.posicoes, ...cfg.tamanho)),
-		el('div', { class: 'cartao texto' }, el('h3', {}, 'Como se faz'), el('ul', { class: 'lista-como' }, cfg.como.map((item) => el('li', {}, item)))),
-		codigo(cfg.ddl, { titulo: 'No banco (SQL)' }),
-		codigo(cfg.prisma, { linguagem: 'prisma', titulo: 'No schema.prisma' }),
-		nota('dica', 'Pensando no modelo', cfg.cuidado),
-		secao(
-			'Os dados',
-			'Passe o mouse sobre uma linha para ver a quem ela está ligada.',
-			el(
-				'div',
-				{ class: `${cfg.tabelas.length === 3 ? 'grade-3' : 'grade-2'} passe-mouse` },
-				cfg.tabelas.map((t) => {
-					const itens = [];
-					registro.set(t.nome, itens);
-					return el(
-						'div',
-						{ class: 'cartao' },
-						tituloTabela(t.nome, { qtd: dados[t.nome].length }),
-						tabela(dados[t.nome], { nome: t.nome, colunas: t.colunas, destaque: t.destaque, aoCriarLinha: (linha, tr) => itens.push({ linha, tr }) }),
-					);
-				}),
+			cartao(
+				'Polling: perguntar toda hora',
+				sequencia([
+					{ de: 'n', texto: 'GET ?depois=41', tipo: 'vazio' },
+					{ de: 's', texto: '200 []', tipo: 'vazio' },
+					{ de: 'n', texto: 'GET ?depois=41', tipo: 'vazio' },
+					{ de: 's', texto: '200 []', tipo: 'vazio' },
+					{ de: 'n', texto: 'GET ?depois=41', tipo: 'http' },
+					{ de: 's', texto: '200 [msg 42]', tipo: 'http' },
+				]),
+				el('p', { class: 'rodape-cartao' }, 'Funciona, mas quase toda resposta vem vazia, e a mensagem chega com atraso de até um intervalo inteiro.'),
 			),
-		),
-		secao(
-			'Juntando com JOIN',
-			'O JOIN segue a FK: liga cada linha à linha da outra tabela cuja PK é igual.',
-			codigo(resultado.sql, { grande: true }),
-			el('div', { class: 'resultado-cab' }, el('h2', {}, 'Resultado'), el('span', { class: 'qtd' }, `${resultado.dados.length} linhas`)),
-			tabela(resultado.dados, { grupos: cfg.grupos }),
-		),
-		nota('repare', 'Repare', cfg.repare),
-	);
-	ligarPorFk(registro, dados, LIGACOES);
-}
-
-/* =====================================================================
- * Paginas: consultas
- * ===================================================================== */
-const JUNCAO = {
-	A: { tabela: 'atendentes', colunas: ['id', 'nome'], chave: 'id', destaque: ['id'], resultado: 'atendente_id' },
-	B: { tabela: 'tickets', colunas: ['id', 'titulo', 'atendente_id'], chave: 'id', fk: 'atendente_id', destaque: ['atendente_id'], resultado: 'ticket_id' },
-	grupos: [
-		{ rotulo: 'A · atendentes', colunas: ['atendente_id', 'atendente'], classe: 'g-a' },
-		{ rotulo: 'B · tickets', colunas: ['ticket_id', 'titulo'], classe: 'g-b' },
-	],
-	legenda: { a: 'atendente sem ticket', ab: 'atendente com ticket (casou no ON)', b: 'ticket sem atendente (na fila)' },
-};
-
-const CONSULTAS = {
-	select: {
-		tipo: 'select',
-		titulo: 'SELECT',
-		subtitulo: 'lendo uma tabela',
-		endpoint: '/api/consultas/select',
-		pergunta: 'Quais tickets estão abertos, esperando atendimento?',
-		explicacao:
-			'SELECT escolhe as colunas, FROM diz de qual tabela, WHERE filtra as linhas e ORDER BY ordena. Toda consulta, por mais complexa que seja, é uma variação disso.',
-		A: { tabela: 'tickets', colunas: ['id', 'titulo', 'status', 'atendente_id', 'criado_em'], chave: 'id', destaque: ['status'], resultado: 'id' },
-		legenda: { a: "passa no WHERE (status = 'ABERTO')", fora: 'não passa no filtro' },
-		repare: [
-			'Só as linhas que passam no WHERE entram no resultado. As outras aparecem riscadas na tabela.',
-			'A coluna atendente_id não foi pedida no SELECT, então não aparece no resultado.',
-		],
-		dica: 'Sem ORDER BY, o banco não garante ordem nenhuma: a ordem que aparece é coincidência. Se a ordem importa, peça.',
-	},
-	'inner-join': {
-		tipo: 'inner',
-		titulo: 'INNER JOIN',
-		subtitulo: 'só o que casa dos dois lados',
-		endpoint: '/api/consultas/inner-join',
-		pergunta: 'Quais tickets já têm um atendente responsável, e quem é?',
-		explicacao:
-			'O JOIN combina cada linha de A com as linhas de B que satisfazem o ON. Aqui o ON é t.atendente_id = a.id: a FK encontrando a PK. Quem não tem par do outro lado fica de fora.',
-		...JUNCAO,
-		repare: [
-			'Ana aparece duas vezes: ela tem dois tickets, e o JOIN gera uma linha para cada par.',
-			'Diego e Eduarda somem porque não têm ticket. Os tickets 5, 6 e 7 também somem, porque não têm atendente.',
-			'O diagrama mostra quais linhas entram, não quantas vezes cada uma aparece.',
-		],
-		dica: 'JOIN sem nada na frente é INNER JOIN. As duas formas dão o mesmo resultado.',
-	},
-	'left-join': {
-		tipo: 'left',
-		titulo: 'LEFT JOIN',
-		subtitulo: 'tudo de A, e de B o que casar',
-		endpoint: '/api/consultas/left-join',
-		pergunta: 'Como está a carga de cada atendente, incluindo quem está sem nenhum ticket?',
-		explicacao:
-			'O LEFT JOIN mantém todas as linhas da tabela da esquerda (a do FROM). Quando uma linha de A não acha par em B, as colunas de B vêm preenchidas com NULL.',
-		...JUNCAO,
-		repare: ['Diego e Eduarda agora aparecem, com NULL nas colunas do ticket.', 'Os tickets da fila continuam de fora: eles só existem do lado B.'],
-		dica: 'Para achar só quem não tem par, filtre o NULL. É o jeito clássico de responder "quais atendentes estão sem ticket?":',
-		dicaSql: `SELECT a.id, a.nome
-FROM atendentes a
-LEFT JOIN tickets t ON t.atendente_id = a.id
-WHERE t.id IS NULL`,
-	},
-	'right-join': {
-		tipo: 'right',
-		titulo: 'RIGHT JOIN',
-		subtitulo: 'tudo de B, e de A o que casar',
-		endpoint: '/api/consultas/right-join',
-		pergunta: 'Liste todos os tickets com o atendente responsável, inclusive os que estão na fila.',
-		explicacao: 'É o espelho do LEFT: mantém todas as linhas da tabela da direita. Os tickets sem atendente vêm com NULL nas colunas de A.',
-		...JUNCAO,
-		repare: ['Os tickets 5, 6 e 7 aparecem com atendente NULL: estão na fila.', 'Diego e Eduarda saem de novo, porque agora quem manda é B.'],
-		dica: 'Todo RIGHT JOIN pode ser escrito como LEFT JOIN, trocando as tabelas de lugar (FROM tickets LEFT JOIN atendentes). Por isso, na prática, quase todo mundo usa só o LEFT.',
-	},
-	'full-outer-join': {
-		tipo: 'full',
-		titulo: 'FULL OUTER JOIN',
-		subtitulo: 'tudo dos dois lados',
-		endpoint: '/api/consultas/full-outer-join',
-		pergunta: 'Quero a visão completa: atendentes ociosos e tickets sem dono, tudo numa lista só.',
-		explicacao:
-			'O FULL OUTER JOIN mantém todas as linhas de A e de B. O que casou vem junto na mesma linha. O que não casou vem com NULL do lado que faltou.',
-		...JUNCAO,
-		repare: [
-			'Aparecem os pares, os atendentes sem ticket e os tickets sem atendente.',
-			'É como juntar o LEFT com o RIGHT, sem repetir os pares.',
-			'LEFT, RIGHT e FULL são os três tipos de OUTER JOIN. LEFT JOIN é apelido de LEFT OUTER JOIN.',
-		],
-		dica: 'O MySQL não tem FULL OUTER JOIN. Lá ele é feito juntando um LEFT JOIN e um RIGHT JOIN com UNION, que é o próximo assunto.',
-	},
-	union: {
-		tipo: 'union',
-		titulo: 'UNION',
-		subtitulo: 'empilhando resultados',
-		endpoint: '/api/consultas/union',
-		endpointAll: '/api/consultas/union-all',
-		pergunta: 'Vamos mandar um comunicado para todo mundo, clientes e atendentes. Qual é a lista de contatos?',
-		explicacao:
-			'O UNION junta o resultado de dois SELECTs, um embaixo do outro. Os dois precisam ter o mesmo número de colunas, na mesma ordem e com tipos compatíveis. O UNION remove as linhas repetidas; o UNION ALL mantém todas.',
-		A: { tabela: 'clientes', colunas: ['nome', 'email'], chave: 'email', destaque: [], resultado: 'email' },
-		B: { tabela: 'atendentes', colunas: ['nome', 'email'], chave: 'email', destaque: [], resultado: 'email' },
-		legenda: { a: 'só cliente', ab: 'cliente e atendente ao mesmo tempo', b: 'só atendente' },
-		repare: [
-			'Bruno Lima é atendente e também é cliente. Com UNION ele aparece uma vez; com UNION ALL, duas.',
-			'Para ser considerada repetida, a linha tem que ser igual em todas as colunas.',
-			'O UNION ALL é mais rápido: não precisa procurar repetidos.',
-		],
-		dica: 'JOIN junta colunas: o resultado cresce para o lado. UNION junta linhas: o resultado cresce para baixo.',
-	},
-};
-
-// Para cada linha (de A, de B ou do resultado), em qual regiao do Venn ela esta.
-function analisar(cfg, tabelas, resultado) {
-	const linhasA = tabelas[cfg.A.tabela].dados;
-	const linhasB = cfg.B ? tabelas[cfg.B.tabela].dados : [];
-	const dados = resultado.dados;
-
-	if (cfg.tipo === 'select') {
-		const entra = (la) => dados.some((r) => r[cfg.A.resultado] === la[cfg.A.chave]);
-		return {
-			regiaoA: (la) => (entra(la) ? 'reg-a' : 'reg-a fora'),
-			regiaoR: () => 'reg-a',
-			origem: (r) => ({ A: linhasA.find((la) => la[cfg.A.chave] === r[cfg.A.resultado]) }),
-		};
-	}
-
-	if (cfg.tipo === 'union') {
-		const emA = (email) => linhasA.some((la) => la.email === email);
-		const emB = (email) => linhasB.some((lb) => lb.email === email);
-		const regiao = (email) => (emA(email) && emB(email) ? 'reg-ab' : emA(email) ? 'reg-a' : 'reg-b');
-		return {
-			regiaoA: (la) => regiao(la.email),
-			regiaoB: (lb) => regiao(lb.email),
-			regiaoR: (r) => regiao(r.email),
-			origem: (r) => ({ A: linhasA.find((la) => la.email === r.email), B: linhasB.find((lb) => lb.email === r.email) }),
-		};
-	}
-
-	const { A, B } = cfg;
-	const casaA = (la) => linhasB.some((lb) => lb[B.fk] === la[A.chave]);
-	const casaB = (lb) => lb[B.fk] != null && linhasA.some((la) => la[A.chave] === lb[B.fk]);
-	const entraA = (la) => dados.some((r) => r[A.resultado] === la[A.chave]);
-	const entraB = (lb) => dados.some((r) => r[B.resultado] === lb[B.chave]);
-	return {
-		regiaoA: (la) => `${casaA(la) ? 'reg-ab' : 'reg-a'}${entraA(la) ? '' : ' fora'}`,
-		regiaoB: (lb) => `${casaB(lb) ? 'reg-ab' : 'reg-b'}${entraB(lb) ? '' : ' fora'}`,
-		regiaoR: (r) => (r[A.resultado] == null ? 'reg-b' : r[B.resultado] == null ? 'reg-a' : 'reg-ab'),
-		origem: (r) => ({
-			A: r[A.resultado] == null ? undefined : linhasA.find((la) => la[A.chave] === r[A.resultado]),
-			B: r[B.resultado] == null ? undefined : linhasB.find((lb) => lb[B.chave] === r[B.resultado]),
-		}),
-	};
-}
-
-async function paginaConsulta(chave, corpo) {
-	const cfg = CONSULTAS[chave];
-	const tabelas = await api('/api/tabelas');
-	let resultado = await api(cfg.endpoint);
-
-	const blocoSql = el('div');
-	const blocoResultado = el('div', { class: 'secao' });
-	const origemA = new Map();
-	const origemB = new Map();
-
-	function desenharResultado() {
-		const analise = analisar(cfg, tabelas, resultado);
-		blocoSql.replaceChildren(codigo(resultado.sql, { grande: true }));
-
-		// Recolore as tabelas de origem (o UNION ALL nao muda nada, os JOINs nao alternam)
-		for (const [linha, tr] of origemA) tr.className = analise.regiaoA(linha);
-		for (const [linha, tr] of origemB) tr.className = analise.regiaoB(linha);
-
-		const linhasResultado = [];
-		blocoResultado.replaceChildren(
-			el(
-				'div',
-				{ class: 'resultado-cab' },
-				el('h2', {}, 'Resultado'),
-				el('span', { class: 'qtd' }, `${resultado.dados.length} linhas`),
-				el('span', { class: 'ajuda' }, 'passe o mouse numa linha para ver de onde ela veio'),
+			cartao(
+				'WebSocket',
+				sequencia([
+					{ de: 'n', texto: 'GET  Upgrade: websocket', tipo: 'http' },
+					{ de: 's', texto: '101 Switching Protocols', tipo: 'http' },
+					{ de: 's', texto: 'msg 42', tipo: 'ws' },
+					{ de: 'n', texto: 'msg 43', tipo: 'ws' },
+					{ de: 's', texto: 'msg 43', tipo: 'ws' },
+					{ de: 's', texto: 'msg 44', tipo: 'ws' },
+				]),
+				el('p', { class: 'rodape-cartao' }, 'Começa como HTTP e vira outra coisa: uma conexão que fica aberta, na qual os dois lados mandam quando quiserem.'),
 			),
-			tabela(resultado.dados, {
-				grupos: cfg.tipo === 'select' || cfg.tipo === 'union' ? null : cfg.grupos,
-				classeLinha: analise.regiaoR,
-				aoCriarLinha: (linha, tr) => linhasResultado.push([linha, tr]),
-			}),
-		);
-
-		for (const [linha, tr] of linhasResultado) {
-			tr.addEventListener('mouseenter', () => {
-				tr.classList.add('foco');
-				const { A, B } = analise.origem(linha);
-				if (A) origemA.get(A)?.classList.add('ligado');
-				if (B) origemB.get(B)?.classList.add('ligado');
-			});
-			tr.addEventListener('mouseleave', limparFoco);
-		}
-		const acenderResultado = (filtro) => () => linhasResultado.forEach(([linha, tr]) => filtro(linha) && tr.classList.add('ligado'));
-		for (const [linha, tr] of origemA) {
-			tr.onmouseenter = () => {
-				tr.classList.add('foco');
-				acenderResultado((r) => analise.origem(r).A === linha)();
-			};
-			tr.onmouseleave = limparFoco;
-		}
-		for (const [linha, tr] of origemB) {
-			tr.onmouseenter = () => {
-				tr.classList.add('foco');
-				acenderResultado((r) => analise.origem(r).B === linha)();
-			};
-			tr.onmouseleave = limparFoco;
-		}
-	}
-
-	const tabelaOrigem = (lado, def, mapa) =>
-		el(
-			'div',
-			{ class: 'cartao' },
-			tituloTabela(def.tabela, { papel: cfg.tipo === 'select' ? null : lado, qtd: tabelas[def.tabela].dados.length }),
-			tabela(tabelas[def.tabela].dados, { nome: def.tabela, colunas: def.colunas, destaque: def.destaque, aoCriarLinha: (linha, tr) => mapa.set(linha, tr) }),
-		);
-
-	let alternar = null;
-	if (cfg.endpointAll) {
-		const botoes = [
-			['UNION', cfg.endpoint],
-			['UNION ALL', cfg.endpointAll],
-		].map(([rotulo, endpoint], i) =>
-			el(
-				'button',
-				{
-					class: i === 0 ? 'ativo' : null,
-					onclick: async (ev) => {
-						resultado = await api(endpoint);
-						botoes.forEach((b) => b.classList.toggle('ativo', b === ev.currentTarget));
-						desenharResultado();
-					},
-				},
-				rotulo,
-			),
-		);
-		alternar = el('div', { class: 'alternar', role: 'group', 'aria-label': 'UNION ou UNION ALL' }, botoes);
-	}
-
-	corpo.append(
-		cabecalho('Consultas', cfg.titulo, cfg.subtitulo),
-		el(
-			'div',
-			{ class: 'consulta-topo' },
-			el('div', { class: 'cartao venn-caixa' }, venn(cfg.tipo, cfg.A.tabela, cfg.B?.tabela), legendaVenn(cfg)),
-			el('div', { class: 'consulta-explica' }, pergunta(cfg.pergunta), el('p', {}, cfg.explicacao), alternar, blocoSql),
-		),
-		secao(
-			'De onde vêm os dados',
-			cfg.tipo === 'select'
-				? 'A coluna do WHERE está destacada. As linhas riscadas não passam no filtro.'
-				: cfg.tipo === 'union'
-					? 'As duas tabelas têm colunas de mesmo nome e tipo, por isso dá para empilhar.'
-					: 'As colunas do ON estão destacadas. As linhas riscadas não entram no resultado.',
-			el('div', { class: cfg.B ? 'grade-2' : '' }, tabelaOrigem('A', cfg.A, origemA), cfg.B && tabelaOrigem('B', cfg.B, origemB)),
-		),
-		blocoResultado,
-		el('div', { class: 'grade-2' }, nota('repare', 'Repare', cfg.repare), nota('dica', 'Dica', cfg.dica, cfg.dicaSql && codigo(cfg.dicaSql))),
-	);
-	desenharResultado();
-}
-
-/* =====================================================================
- * Pagina: constraints
- * ===================================================================== */
-const ORDEM_TIPO = ['PRIMARY KEY', 'FOREIGN KEY', 'UNIQUE', 'CHECK', 'NOT NULL'];
-const CLASSE_TIPO = { 'PRIMARY KEY': 't-pk', 'FOREIGN KEY': 't-fk', UNIQUE: 't-uq', CHECK: 't-ck', 'NOT NULL': 't-nn' };
-const SQLSTATE = {
-	23502: 'not_null_violation',
-	23505: 'unique_violation',
-	23514: 'check_violation',
-	23503: 'foreign_key_violation',
-	23001: 'restrict_violation',
-	'22P02': 'invalid_text_representation',
-};
-
-const EXPERIMENTOS = [
-	{
-		grupo: 'Regras de coluna',
-		itens: [
-			{ id: 'default', espera: 'aceita', titulo: 'DEFAULT: o banco completa o que faltou', texto: 'O INSERT não informa status, atendente nem data. O banco usa o DEFAULT de cada coluna, ou NULL se a coluna aceitar.' },
-			{ id: 'not-null', espera: 'recusa', titulo: 'NOT NULL: campo obrigatório', texto: 'Todo cliente precisa de e-mail. Gravar NULL é recusado.' },
-			{ id: 'unique', espera: 'recusa', titulo: 'UNIQUE: sem repetição', texto: 'Já existe um cliente com fernanda@email.com.' },
-			{ id: 'check', espera: 'recusa', titulo: 'CHECK: regra de negócio no banco', texto: 'A nota vai de 1 a 5. Este CHECK foi escrito à mão na migration, porque o Prisma não gera CHECK.' },
-			{ id: 'enum', espera: 'recusa', titulo: 'ENUM: só valores da lista', texto: 'status é do tipo status_ticket, que só aceita ABERTO, EM_ANDAMENTO ou FECHADO.' },
-		],
-	},
-	{
-		grupo: 'Regras de relação',
-		itens: [
-			{ id: 'foreign-key', espera: 'recusa', titulo: 'FOREIGN KEY: não aponta para o vazio', texto: 'Não existe cliente 999. A FK impede que nasça um ticket órfão.' },
-			{ id: 'um-para-um', espera: 'recusa', titulo: 'UNIQUE na FK: é isso que faz a 1:1', texto: 'O ticket 1 já tem avaliação. O UNIQUE em avaliacoes.ticket_id recusa a segunda.' },
-			{ id: 'muitos-para-muitos', espera: 'recusa', titulo: 'PK composta: o mesmo par não se repete', texto: 'O ticket 1 já tem a tag 1 (urgente).' },
-		],
-	},
-	{
-		grupo: 'O que acontece ao apagar (ON DELETE)',
-		itens: [
-			{ id: 'restrict', espera: 'recusa', titulo: 'RESTRICT: não deixa apagar', texto: 'Fernanda (cliente 1) tem tickets. Apagar o cadastro deixaria tickets sem dono, então o banco recusa.' },
-			{ id: 'set-null', espera: 'aceita', titulo: 'SET NULL: solta a referência', texto: 'Apagar Ana (atendente 1) não apaga os tickets que eram dela: eles voltam para a fila, com atendente_id NULL.' },
-			{ id: 'cascade', espera: 'aceita', titulo: 'CASCADE: apaga junto', texto: 'Apagar o ticket 1 apaga também a avaliação e as tags dele. Sem o ticket, elas não fazem sentido.' },
-		],
-	},
-];
-
-function cartaoCatalogo(nome, linhas) {
-	const naoNulas = linhas.filter((l) => l.tipo === 'NOT NULL').map((l) => l.definicao.replace(/^NOT NULL\s+/, ''));
-	const outras = linhas.filter((l) => l.tipo !== 'NOT NULL').sort((a, b) => ORDEM_TIPO.indexOf(a.tipo) - ORDEM_TIPO.indexOf(b.tipo));
-	return el(
-		'div',
-		{ class: 'cartao' },
-		el('h3', { class: 'mono' }, nome),
-		el(
-			'ul',
-			{ class: 'catalogo' },
-			outras.map((l) => el('li', {}, el('span', { class: `tipo ${CLASSE_TIPO[l.tipo]}` }, l.tipo), el('span', { class: 'def' }, l.definicao), el('span', { class: 'nome' }, l.nome))),
-			naoNulas.length && el('li', {}, el('span', { class: 'tipo t-nn' }, 'NOT NULL'), el('span', { class: 'def' }, naoNulas.join(', '))),
-		),
-	);
-}
-
-function cartaoExperimento(def, sqlDoBackend) {
-	const saida = el('div', { class: 'exp-saida', 'aria-live': 'polite' });
-	const botao = el('button', { class: 'botao' }, 'Executar');
-
-	botao.addEventListener('click', async () => {
-		botao.disabled = true;
-		try {
-			const r = await api(`/api/constraints/experimentos/${def.id}`, { method: 'POST' });
-			saida.replaceChildren(...resultadoExperimento(r));
-		} catch (erro) {
-			saida.replaceChildren(caixaErro(erro));
-		} finally {
-			botao.disabled = false;
-		}
-	});
-
-	return el(
-		'article',
-		{ class: `cartao exp${sqlDoBackend?.verificacoes.length ? ' largo' : ''}` },
-		el('header', {}, el('h3', {}, def.titulo), el('span', { class: `espera ${def.espera}` }, def.espera === 'aceita' ? 'esperado: aceita' : 'esperado: recusa')),
-		el('p', {}, def.texto),
-		codigo(sqlDoBackend?.comando || '-- experimento nao encontrado no backend'),
-		sqlDoBackend?.verificacoes.length ? el('p', { class: 'mini' }, 'Para mostrar o efeito, roda antes e depois:') : null,
-		(sqlDoBackend?.verificacoes || []).map((sql) => codigo(sql)),
-		botao,
-		saida,
-	);
-}
-
-function resultadoExperimento(r) {
-	const partes = [];
-	if (r.aceito) {
-		partes.push(el('div', { class: 'veredito ok' }, '✔ O banco aceitou'));
-		if (r.retorno.length) partes.push(el('p', { class: 'mini' }, 'Linha afetada (RETURNING *):'), tabela(r.retorno));
-		for (const v of r.verificacoes) {
-			const colunas = Object.keys(v.antes[0] || v.depois[0] || {});
-			partes.push(
-				el(
-					'div',
-					{ class: 'antes-depois' },
-					el('div', {}, el('div', { class: 'rot' }, 'Antes'), tabela(v.antes, { colunas })),
-					el('div', {}, el('div', { class: 'rot' }, 'Depois'), tabela(v.depois, { colunas })),
-				),
-			);
-		}
-	} else {
-		const e = r.erro;
-		partes.push(
-			el('div', { class: 'veredito erro' }, '✖ O banco recusou'),
-			el(
-				'dl',
-				{ class: 'erro-pg' },
-				el('dt', {}, 'SQLSTATE'),
-				el('dd', {}, e.codigo ? `${e.codigo}${SQLSTATE[e.codigo] ? ` (${SQLSTATE[e.codigo]})` : ''}` : '—'),
-				e.constraint && [el('dt', {}, 'constraint'), el('dd', {}, e.constraint)],
-				el('dt', {}, 'mensagem'),
-				el('dd', {}, e.mensagem),
-				e.detalhe && [el('dt', {}, 'detalhe'), el('dd', {}, e.detalhe)],
-			),
-		);
-	}
-	partes.push(el('p', { class: 'rollback' }, 'Rodou dentro de uma transação que terminou em ROLLBACK: nada foi gravado de verdade.'));
-	return partes;
-}
-
-async function paginaConstraints(corpo) {
-	const [catalogo, experimentos] = await Promise.all([api('/api/constraints'), api('/api/constraints/experimentos')]);
-	const porTabela = new Map();
-	for (const linha of catalogo.dados) {
-		if (!porTabela.has(linha.tabela)) porTabela.set(linha.tabela, []);
-		porTabela.get(linha.tabela).push(linha);
-	}
-	const sqlPorId = Object.fromEntries(experimentos.map((e) => [e.id, e]));
-
-	corpo.append(
-		cabecalho(
-			'Constraints',
-			'Regras do banco',
-			'o banco se protege',
-			'Constraints são regras que o próprio banco garante. Não importa se o dado vem do backend, de um script ou de alguém no psql: o que viola a regra não entra.',
-		),
-		secao(
-			'O que o banco garante',
-			'Lido do catálogo do próprio Postgres (pg_constraint). O Prisma cria UNIQUE como índice único, por isso a consulta também olha pg_index.',
-			el('div', { class: 'grade-auto' }, [...porTabela].map(([nome, linhas]) => cartaoCatalogo(nome, linhas))),
-			el('details', { class: 'ver-sql' }, el('summary', {}, 'ver o SQL que lê o catálogo'), codigo(catalogo.sql)),
-		),
-		...EXPERIMENTOS.map((g) =>
-			secao(
-				g.grupo,
-				null,
-				el(
-					'div',
-					{ class: 'grade-dados' },
-					g.itens.map((def) => cartaoExperimento(def, sqlPorId[def.id])),
-				),
-			),
-		),
-	);
-}
-
-/* =====================================================================
- * Pagina: Prisma
- * ===================================================================== */
-const CODIGO_ORM = `// src/api/rest/tickets/tickets.repository.ts
-const COM_RELACOES = {
-  cliente: true,                    // 1:N
-  atendente: true,                  // 1:N opcional
-  avaliacao: true,                  // 1:1
-  tags: { include: { tag: true } }, // N:M
-};
-
-findById(id: number) {
-  return this.databaseService.ticket.findUnique({
-    where: { id },
-    include: COM_RELACOES,
-  });
-}`;
-
-async function paginaPrisma(corpo) {
-	const tabelas = await api('/api/tabelas');
-	const saida = el('div', { class: 'json' });
-	const botoes = tabelas.tickets.dados.map((t) => el('button', { class: 'botao sec', 'data-id': t.id }, `ticket ${t.id}`));
-
-	async function mostrar(id) {
-		botoes.forEach((b) => b.classList.toggle('ativo', b.dataset.id === String(id)));
-		try {
-			const r = await api(`/api/tickets/${id}`);
-			saida.replaceChildren(codigo(r, { linguagem: 'json', titulo: `GET /api/tickets/${id}` }));
-		} catch (erro) {
-			saida.replaceChildren(caixaErro(erro));
-		}
-	}
-	botoes.forEach((b) => b.addEventListener('click', () => mostrar(b.dataset.id)));
-
-	corpo.append(
-		cabecalho(
-			'No código',
-			'O mesmo dado pelo Prisma',
-			'ORM',
-			'No dia a dia, boa parte das consultas sai pelo ORM. Ele lê as relações declaradas no schema.prisma e busca os dados ligados sem você escrever SQL.',
 		),
 		el(
 			'div',
 			{ class: 'grade-2' },
+			nota('', 'WebSocket, em uma frase', [
+				'Um protocolo (RFC 6455, de 2011) para uma conexão TCP que fica aberta entre navegador e servidor.',
+				'Full-duplex: os dois lados mandam mensagens a qualquer momento, sem esperar o outro.',
+				'Começa com uma requisição HTTP comum, na mesma porta do site, e por isso passa por firewall e proxy.',
+			]),
+			nota('dica', 'Outras saídas que existem', [
+				'Long polling: o servidor segura a resposta até ter novidade. Menos requisições vazias, mas uma por mensagem.',
+				'SSE (Server-Sent Events, o EventSource do navegador): o servidor manda um fluxo de eventos sobre HTTP. Só vai do servidor para o navegador.',
+				'Na última tela tem uma tabela comparando tudo.',
+			]),
+		),
+	);
+}
+
+/* =====================================================================
+ * 2. Polling x WebSocket, ao vivo
+ * ===================================================================== */
+function paginaPolling(corpo) {
+	let intervaloMs = 2000;
+	let ultimoId = 0;
+	let timer = null;
+	const chegouNoWs = new Map();
+
+	const reqs = contador('requisições');
+	const vazias = contador('voltaram vazias', 'ruim');
+	const comNovidade = contador('com novidade', 'bom');
+	const framesWs = contador('frames recebidos', 'bom');
+	const faixa = el('div', { class: 'faixa-req', title: 'Cada quadradinho é uma requisição. Verde: trouxe mensagem nova.' });
+	const feedHttp = el('ul', { class: 'feed' }, el('li', { class: 'vazio-feed' }, 'mande uma mensagem e veja quando ela aparece aqui'));
+	const feedWs = el('ul', { class: 'feed' }, el('li', { class: 'vazio-feed' }, 'a conexão está aberta, esperando o servidor falar'));
+
+	function adicionar(feed, mensagem, atraso) {
+		feed.querySelector('.vazio-feed')?.remove();
+		feed.prepend(el('li', {}, el('span', { class: 'autor' }, `${mensagem.autor}:`), el('span', {}, mensagem.texto), atraso));
+		while (feed.children.length > 30) feed.lastChild.remove();
+	}
+
+	async function perguntar() {
+		try {
+			const { data } = await api(`/api/mensagens?depois=${ultimoId}`);
+			reqs.valor.textContent = Number(reqs.valor.textContent) + 1;
+			faixa.append(el('i', { class: data.length ? 'novidade' : null }));
+			while (faixa.children.length > 90) faixa.firstChild.remove();
+			if (!data.length) {
+				vazias.valor.textContent = Number(vazias.valor.textContent) + 1;
+				return;
+			}
+			comNovidade.valor.textContent = Number(comNovidade.valor.textContent) + 1;
+			for (const m of data) {
+				ultimoId = Math.max(ultimoId, m.id);
+				const t = chegouNoWs.get(m.id);
+				const segundos = t ? ((performance.now() - t) / 1000).toFixed(1).replace('.', ',') : null;
+				adicionar(feedHttp, m, el('span', { class: 'atraso lento' }, segundos ? `${segundos} s depois do WebSocket` : 'chegou'));
+			}
+		} catch {}
+	}
+
+	function agendar(ms) {
+		intervaloMs = ms;
+		clearInterval(timer);
+		timer = setInterval(perguntar, intervaloMs);
+		botoesIntervalo.forEach((b) => b.classList.toggle('ativo', Number(b.dataset.ms) === ms));
+	}
+
+	const botoesIntervalo = [1000, 2000, 5000].map((ms) => el('button', { 'data-ms': ms, onclick: () => agendar(ms) }, `a cada ${ms / 1000} s`));
+
+	// A primeira pergunta so marca de onde comecar: o que ja existia nao conta como novidade.
+	let naPagina = true;
+	api('/api/mensagens').then(({ data }) => {
+		if (!naPagina) return;
+		ultimoId = data.reduce((maior, m) => Math.max(maior, m.id), 0);
+		agendar(intervaloMs);
+	});
+
+	const ws = new WebSocket(urlWs('/ws/chat'));
+	ws.addEventListener('message', (e) => {
+		const { event, data } = JSON.parse(e.data);
+		framesWs.valor.textContent = Number(framesWs.valor.textContent) + 1;
+		if (event !== 'mensagem') return;
+		chegouNoWs.set(data.id, performance.now());
+		adicionar(feedWs, data, el('span', { class: 'atraso rapido' }, 'na hora'));
+	});
+
+	aoSair(() => {
+		naPagina = false;
+		clearInterval(timer);
+		ws.close(1000, 'saiu da página');
+	});
+
+	const nome = el('input', { class: 'entrada curta', placeholder: 'seu nome', value: lerNome() || 'Professor', maxlength: 24 });
+	const texto = el('input', { class: 'entrada', placeholder: 'mensagem para o chat', maxlength: 500 });
+	function enviar(ev) {
+		ev.preventDefault();
+		if (!texto.value.trim()) return;
+		mandar(ws, 'mensagem', { autor: nome.value, texto: texto.value });
+		texto.value = '';
+	}
+
+	corpo.append(
+		cabecalho(
+			'O problema',
+			'Polling × WebSocket, ao vivo',
+			'o mesmo chat, dos dois jeitos',
+			'Os dois painéis acompanham o chat da aula. O da esquerda pergunta ao servidor de tempos em tempos (GET /api/mensagens). O da direita tem uma conexão WebSocket aberta e só espera.',
+		),
+		cartao(
+			'Mande uma mensagem (vai para o chat de verdade, em /chat/)',
+			el('form', { class: 'linha-form', onsubmit: enviar }, nome, texto, el('button', { class: 'botao' }, 'Enviar')),
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			comClasse(
+				cartao(
+					'Polling: GET /api/mensagens?depois=N',
+					el('div', { class: 'alternar' }, botoesIntervalo),
+					el('div', { class: 'contadores' }, reqs.no, vazias.no, comNovidade.no),
+					faixa,
+					feedHttp,
+				),
+				'lado-http',
+			),
+			comClasse(cartao('WebSocket: /ws/chat', el('div', { class: 'contadores' }, framesWs.no), feedWs), 'lado-ws'),
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			nota('repare', 'Repare', [
+				'O polling continua perguntando quando não há nada: cada quadradinho cinza é uma requisição HTTP inteira (cabeçalhos, cookies, resposta) que não trouxe nada.',
+				'O atraso do polling é, em média, metade do intervalo. Para diminuir o atraso, só aumentando as requisições.',
+				'No WebSocket, um frame só sai quando há o que dizer. Além das mensagens, chegam os avisos de presença (quantos estão online).',
+			]),
+			nota('dica', 'Ponha a turma para usar', [
+				'Peça para abrirem o chat no celular e mandarem mensagens enquanto esta tela está no projetor.',
+				'Troque para "a cada 1 s" e veja os quadradinhos cinzas se multiplicarem. Com 40 alunos, são 40 requisições por segundo para quase nada.',
+			]),
+		),
+	);
+}
+
+/* =====================================================================
+ * 3. Handshake
+ * ===================================================================== */
+const CABECALHOS_WS = ['upgrade', 'connection', 'sec-websocket-key', 'sec-websocket-version', 'sec-websocket-extensions', 'sec-websocket-accept', 'sec-websocket-protocol', 'origin'];
+
+function mensagemHttp(linha, cabecalhos) {
+	const linhas = [`<span class="linha1">${escapar(linha)}</span>`];
+	for (const [nome, valor] of cabecalhos) {
+		const destaque = CABECALHOS_WS.includes(nome.toLowerCase());
+		linhas.push(`<span class="${destaque ? 'chave-ws' : ''}"><span class="nome-cab">${escapar(nome)}:</span> ${escapar(valor)}</span>`);
+	}
+	return el('pre', { html: linhas.join('\n') });
+}
+
+async function sha1Base64(texto) {
+	// crypto.subtle so existe em contexto seguro (https ou localhost).
+	if (!globalThis.crypto?.subtle) return null;
+	const hash = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(texto));
+	return btoa(String.fromCharCode(...new Uint8Array(hash)));
+}
+
+function paginaHandshake(corpo) {
+	const pedido = el('figure', { class: 'codigo http-msg' }, el('figcaption', {}, 'O que o navegador mandou'), el('pre', {}, 'conectando…'));
+	const resposta = el('figure', { class: 'codigo http-msg' }, el('figcaption', {}, 'O que o servidor respondeu'), el('pre', {}, 'conectando…'));
+	const conta = el('div', { class: 'cartao' }, el('h3', {}, 'A conta do Sec-WebSocket-Accept'), el('p', {}, 'esperando o handshake…'));
+	let ws = null;
+
+	function conectar() {
+		ws?.close(1000, 'refazendo o handshake');
+		ws = new WebSocket(urlWs('/ws/laboratorio'));
+		ws.addEventListener('message', async (e) => {
+			const { event, data } = JSON.parse(e.data);
+			if (event !== 'handshake') return;
+			pedido.querySelector('pre').replaceWith(mensagemHttp(data.requisicao.linha, data.requisicao.cabecalhos));
+			resposta.querySelector('pre').replaceWith(mensagemHttp(data.resposta.linha, data.resposta.cabecalhos));
+
+			const c = data.calculo;
+			const respondido = data.resposta.cabecalhos.find(([nome]) => nome.toLowerCase() === 'sec-websocket-accept')?.[1];
+			const local = await sha1Base64(c.chave + c.guid);
+			conta.replaceChildren(
+				el('h3', {}, 'A conta do Sec-WebSocket-Accept'),
+				el(
+					'dl',
+					{ class: 'conta' },
+					el('dt', {}, '1. a chave do navegador'),
+					el('dd', {}, el('span', { class: 'chave' }, c.chave), el('span', { class: 'mono' }, '  (16 bytes aleatórios, em base64)')),
+					el('dt', {}, '2. + o GUID fixo da RFC'),
+					el('dd', {}, el('span', { class: 'chave' }, c.chave), el('span', { class: 'guid' }, c.guid)),
+					el('dt', {}, '3. SHA-1 disso'),
+					el('dd', {}, c.sha1),
+					el('dt', {}, '4. em base64'),
+					el('dd', {}, el('span', { class: 'accept' }, c.accept)),
+				),
+				el(
+					'div',
+					{ class: `veredito ${respondido === c.accept ? 'ok' : 'erro'}` },
+					respondido === c.accept ? `✓ É exatamente o Sec-WebSocket-Accept da resposta. O navegador fez a mesma conta e aceitou.` : '✗ não bateu',
+				),
+				local && el('p', { class: 'rodape-cartao' }, local === c.accept ? '✓ Conferido também aqui, pelo JavaScript da página (crypto.subtle).' : '✗ A conta feita aqui na página deu diferente.'),
+			);
+		});
+	}
+
+	conectar();
+	aoSair(() => ws?.close(1000, 'saiu da página'));
+
+	corpo.append(
+		cabecalho(
+			'O protocolo',
+			'O handshake',
+			'de HTTP para WebSocket',
+			'Toda conexão WebSocket começa como uma requisição HTTP/1.1 comum, com um pedido: "vamos trocar de protocolo?". Se o servidor topar, ele responde 101, e a mesma conexão TCP passa a carregar frames WebSocket.',
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			cartao(
+				'A sequência',
+				sequencia(
+					[
+						{ de: 'n', texto: 'GET /ws/laboratorio  Upgrade', tipo: 'http' },
+						{ de: 's', texto: '101 Switching Protocols', tipo: 'http' },
+						{ nota: 'daqui em diante, nada de HTTP nessa conexão' },
+						{ de: 's', texto: 'frame: {"event":"handshake",…}', tipo: 'ws' },
+						{ de: 'n', texto: 'frame', tipo: 'ws' },
+						{ de: 'n', texto: 'close 1000', tipo: 'ws' },
+						{ de: 's', texto: 'close 1000', tipo: 'ws' },
+					],
+					{ largura: 420 },
+				),
+				el('p', { class: 'rodape-cartao' }, 'O JavaScript da página não enxerga os cabeçalhos do handshake. Quem mostra é o servidor: assim que a conexão abre, ele devolve num frame o que recebeu e o que respondeu.'),
+				el('div', { class: 'botoes' }, el('button', { class: 'botao sec', onclick: conectar }, '↻ Refazer o handshake (chave nova)')),
+			),
+			el('div', { class: 'secao' }, pedido, resposta),
+		),
+		conta,
+		el(
+			'div',
+			{ class: 'grade-2' },
+			nota('', 'Os cabeçalhos que importam (em destaque)', [
+					el('span', {}, el('code', {}, 'Upgrade: websocket'), ' e ', el('code', {}, 'Connection: Upgrade'), ': o pedido de troca de protocolo.'),
+					el('span', {}, el('code', {}, 'Sec-WebSocket-Key'), ': 16 bytes aleatórios. Não é segurança: serve para o servidor provar que entendeu o pedido.'),
+					el('span', {}, el('code', {}, 'Sec-WebSocket-Version: 13'), ': a versão da RFC 6455. Ninguém usa outra.'),
+					el('span', {}, el('code', {}, 'Origin'), ': de qual site veio a página. O servidor deve conferir (ver a última tela).'),
+				el('span', {}, el('code', {}, 'Sec-WebSocket-Extensions'), ': o navegador oferece compressão (permessage-deflate). Este servidor não aceitou, por isso o cabeçalho não volta na resposta.'),
+			]),
+			nota('dica', 'ws:// e wss://', [
+				'ws:// é WebSocket sobre TCP puro (como http://). wss:// é sobre TLS (como https://).',
+				'Aqui o WebSocket usa a mesma porta do site. Em produção, wss:// na 443 passa por qualquer firewall que deixa passar HTTPS.',
+				'O Cookie da página vai junto no handshake. É assim que o servidor sabe quem é o usuário.',
+			]),
+		),
+	);
+}
+
+/* =====================================================================
+ * 4. O frame
+ * ===================================================================== */
+const OPCODES = [
+	['0x0', 'continuação', 'pedaço de uma mensagem fatiada em vários frames'],
+	['0x1', 'texto', 'UTF-8. O JSON do chat vai assim'],
+	['0x2', 'binário', 'bytes quaisquer (imagem, áudio, protocolo próprio)'],
+	['0x8', 'close', 'quero fechar; leva um código e um motivo'],
+	['0x9', 'ping', '"você está aí?"'],
+	['0xA', 'pong', '"estou". O navegador responde sozinho'],
+];
+
+const hex = (b) => b.toString(16).padStart(2, '0').toUpperCase();
+const bin = (b) => b.toString(2).padStart(8, '0');
+
+function montarFrame(texto, mascarar) {
+	const dados = new TextEncoder().encode(texto);
+	const n = dados.length;
+	const len7 = n <= 125 ? n : n <= 0xffff ? 126 : 127;
+	const b0 = 0x80 | 0x1; // FIN = 1, opcode = 1 (texto)
+	const b1 = (mascarar ? 0x80 : 0) | len7;
+	const estendido = len7 === 126 ? [n >> 8, n & 0xff] : len7 === 127 ? [0, 0, 0, 0, (n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff] : [];
+	const chave = mascarar ? [...crypto.getRandomValues(new Uint8Array(4))] : [];
+	const noFio = mascarar ? dados.map((b, i) => b ^ chave[i % 4]) : dados;
+	return { b0, b1, len7, estendido, chave, dados: [...dados], noFio: [...noFio], cabecalho: 2 + estendido.length + chave.length };
+}
+
+function bitsDoByte(b, campos) {
+	const bits = bin(b).split('');
+	return el('div', { class: 'bits' }, campos.map(([classe, rotulo], i) => el('div', { class: `bit ${classe}` }, el('b', {}, bits[i]), el('small', {}, rotulo))));
+}
+
+function paginaFrame(corpo) {
+	let mascarar = true;
+	const entrada = el('input', { class: 'entrada', value: '{"event":"mensagem","data":{"autor":"Ana","texto":"oi"}}', maxlength: 70000 });
+	const saida = el('div', { class: 'secao' });
+	const sentido = el(
+		'div',
+		{ class: 'alternar' },
+		el('button', { class: 'ativo', 'data-m': '1' }, 'navegador → servidor'),
+		el('button', { 'data-m': '0' }, 'servidor → navegador'),
+	);
+	sentido.addEventListener('click', (ev) => {
+		const b = ev.target.closest('button');
+		if (!b) return;
+		mascarar = b.dataset.m === '1';
+		sentido.querySelectorAll('button').forEach((x) => x.classList.toggle('ativo', x === b));
+		desenhar();
+	});
+
+	function desenhar() {
+		const f = montarFrame(entrada.value, mascarar);
+		const mostrar = 24;
+		const bytes = [
+			el('span', { class: 'byte c-b0', title: 'FIN + RSV + opcode' }, hex(f.b0)),
+			el('span', { class: 'byte c-b1', title: 'MASK + tamanho' }, hex(f.b1)),
+			f.estendido.map((b) => el('span', { class: 'byte c-ext', title: 'tamanho estendido' }, hex(b))),
+			f.chave.map((b) => el('span', { class: 'byte c-chave', title: 'chave da máscara' }, hex(b))),
+			f.noFio.slice(0, mostrar).map((b) => el('span', { class: 'byte c-dados', title: mascarar ? 'dados mascarados' : 'dados' }, hex(b))),
+			f.noFio.length > mostrar && el('span', { class: 'byte c-mais' }, `+${f.noFio.length - mostrar} bytes`),
+		];
+
+		const leituraLen =
+			f.len7 === 126 ? `126: o tamanho real está nos 2 próximos bytes (${f.dados.length})` : f.len7 === 127 ? `127: o tamanho real está nos 8 próximos bytes (${f.dados.length})` : `${f.len7} bytes de dados`;
+
+		const colunas = Math.min(f.dados.length, 12);
+		const caracteres = [];
+		{
+			let i = 0;
+			for (const ch of entrada.value) {
+				const tam = new TextEncoder().encode(ch).length;
+				for (let k = 0; k < tam && i < colunas; k++, i++) caracteres.push(k === 0 ? ch : '↳');
+				if (i >= colunas) break;
+			}
+		}
+		const tabelaXor = mascarar
+			? el(
+					'div',
+					{ class: 'tabela-wrap' },
+					el(
+						'table',
+						{ class: 'xor' },
+						el('thead', {}, el('tr', {}, el('th', {}, ''), caracteres.map((c) => el('th', {}, c === ' ' ? '␠' : c)))),
+						el(
+							'tbody',
+							{},
+							el('tr', { class: 'r-dado' }, el('td', {}, 'dado (UTF-8)'), f.dados.slice(0, colunas).map((b) => el('td', {}, hex(b)))),
+							el('tr', { class: 'r-chave' }, el('td', {}, 'XOR chave'), f.dados.slice(0, colunas).map((_, i) => el('td', {}, hex(f.chave[i % 4])))),
+							el('tr', { class: 'r-fio' }, el('td', {}, '= no fio'), f.noFio.slice(0, colunas).map((b) => el('td', {}, hex(b)))),
+						),
+					),
+				)
+			: null;
+
+		saida.replaceChildren(
+			cartao(
+				'O frame inteiro, byte a byte',
+				el('div', { class: 'bytes' }, bytes),
+				el(
+					'div',
+					{ class: 'legenda-bytes' },
+					el('span', {}, el('i', { style: 'background:var(--f-op)' }), 'FIN + opcode'),
+					el('span', {}, el('i', { style: 'background:var(--f-len)' }), 'MASK + tamanho'),
+					f.estendido.length > 0 && el('span', {}, el('i', { style: 'background:color-mix(in srgb, var(--f-len) 70%, #000)' }), 'tamanho estendido'),
+					mascarar && el('span', {}, el('i', { style: 'background:var(--f-chave)' }), 'chave da máscara'),
+					el('span', {}, el('i', { style: 'background:var(--f-dados)' }), mascarar ? 'dados (mascarados)' : 'dados'),
+				),
+				el(
+					'div',
+					{ class: 'totais' },
+					contadorFixo(f.cabecalho, 'bytes de cabeçalho'),
+					contadorFixo(f.dados.length, 'bytes de dados'),
+					contadorFixo(f.cabecalho + f.dados.length, 'bytes no total'),
+					contadorFixo([...entrada.value].length, 'caracteres digitados'),
+				),
+			),
+			el(
+				'div',
+				{ class: 'grade-2' },
+				cartao(
+					`Byte 1: 0x${hex(f.b0)}`,
+					bitsDoByte(f.b0, [['fin', 'FIN'], ['rsv', 'RSV1'], ['rsv', 'RSV2'], ['rsv', 'RSV3'], ['op', 'opcode'], ['op', 'opcode'], ['op', 'opcode'], ['op', 'opcode']]),
+					el('p', { class: 'leitura' }, el('b', {}, 'FIN = 1'), ': última (e única) parte da mensagem. ', el('b', {}, 'opcode = 0001'), ': frame de texto.'),
+				),
+				cartao(
+					`Byte 2: 0x${hex(f.b1)}`,
+					bitsDoByte(f.b1, [['mask', 'MASK'], ['len', 'tam'], ['len', 'tam'], ['len', 'tam'], ['len', 'tam'], ['len', 'tam'], ['len', 'tam'], ['len', 'tam']]),
+					el('p', { class: 'leitura' }, el('b', {}, `MASK = ${mascarar ? 1 : 0}`), mascarar ? ': os dados vêm mascarados. ' : ': sem máscara (servidor nunca mascara). ', el('b', {}, `tamanho = ${f.len7}`), `: ${leituraLen}.`),
+				),
+			),
+			mascarar
+				? cartao(
+						'A máscara: cada byte dos dados passa por um XOR com a chave',
+						tabelaXor,
+						el('p', { class: 'rodape-cartao' }, `Chave deste frame: ${f.chave.map(hex).join(' ')}. Ela muda a cada frame e vai junto, no próprio frame: qualquer um que veja o tráfego desfaz o XOR. Por isso a máscara não é criptografia.`),
+					)
+				: nota('', 'Do servidor para o navegador', 'Sem chave e sem máscara: os bytes dos dados vão como estão. Mudar o sentido não muda o JSON, só o cabeçalho, que fica 4 bytes menor.'),
+		);
+	}
+
+	function contadorFixo(valor, rotulo) {
+		return el('div', { class: 'contador' }, el('b', {}, valor), el('span', {}, rotulo));
+	}
+
+	const exemplos = [
+		['oi', 'oi'],
+		['JSON do chat', '{"event":"mensagem","data":{"autor":"Ana","texto":"oi"}}'],
+		['acentos e emoji', 'ação 🚀'],
+		['130 caracteres', 'x'.repeat(130)],
+		['70 mil caracteres', 'x'.repeat(70000)],
+	];
+
+	entrada.addEventListener('input', desenhar);
+	desenhar();
+
+	corpo.append(
+		cabecalho(
+			'O protocolo',
+			'O frame',
+			'o envelope de cada mensagem',
+			'Depois do handshake, tudo o que passa na conexão são frames. O cabeçalho tem de 2 a 14 bytes: bem diferente das centenas de bytes de cabeçalho de cada requisição HTTP.',
+		),
+		cartao(
+			'Monte um frame',
+			el('div', { class: 'linha-form' }, entrada),
+			el('div', { class: 'botoes' }, sentido, exemplos.map(([rotulo, valor]) => el('button', { class: 'botao sec', onclick: () => ((entrada.value = valor), desenhar()) }, rotulo))),
+		),
+		saida,
+		el(
+			'div',
+			{ class: 'grade-2' },
+			secao('Os tipos de frame (opcode)', null, tabelaSimples(['opcode', 'tipo', 'para quê'], OPCODES, ['mono nowrap', 'nowrap', ''])),
 			el(
 				'div',
 				{ class: 'secao' },
-				codigo(CODIGO_ORM, { linguagem: 'ts', titulo: 'Buscando um ticket com tudo ligado a ele' }),
 				nota('repare', 'Repare', [
-					'No SQL o resultado é uma tabela plana: uma linha para cada tag. No ORM é um objeto aninhado.',
-					'O include só funciona porque as relações estão declaradas no schema.prisma: a modelagem vem primeiro.',
-					'atendente e avaliacao podem vir null: são as relações opcionais do modelo.',
+					'O tamanho é em bytes, não em caracteres: "ç" ocupa 2 bytes em UTF-8, e um emoji ocupa 4.',
+					'Até 125 bytes, o tamanho cabe no próprio byte 2. Acima disso, o valor 126 avisa "o tamanho vem nos 2 bytes seguintes", e 127 avisa "vem nos 8 seguintes".',
+					'O navegador é obrigado a mascarar tudo o que manda. O servidor nunca mascara. Um servidor que receber um frame sem máscara do navegador fecha a conexão.',
 				]),
 				nota(
 					'dica',
-					'Olhe o SQL que o Prisma gerou',
-					'Rode docker compose logs -f backend e clique num ticket. O Prisma não faz um JOIN: ele manda um SELECT por relação e monta o objeto em memória. Quem sabe SQL consegue perceber isso, e decidir quando vale escrever a consulta à mão.',
+					'Por que existe a máscara?',
+					'Por causa de proxies antigos que não entendiam WebSocket. Se o JavaScript de um site controlasse os bytes exatos que saem no fio, poderia montar algo que parece uma requisição HTTP e envenenar o cache do proxy. Com a máscara aleatória, quem escolhe os bytes é o navegador, não a página.',
 				),
 			),
-			el('div', { class: 'secao' }, el('div', { class: 'botoes' }, botoes), saida),
 		),
 	);
-	if (botoes.length) await mostrar(botoes[0].dataset.id);
+}
+
+/* =====================================================================
+ * Laboratorio: conexao com /ws/laboratorio e o log dos eventos
+ * ===================================================================== */
+const NOMES_ESTADO = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
+
+function laboratorio() {
+	let ws = null;
+	const estados = NOMES_ESTADO.map((nome, i) => el('div', { class: 'estado' }, nome, el('small', {}, `readyState ${i}`)));
+	const log = el('ul', { class: 'log' }, el('li', { class: 'vazio-log' }, 'nenhum evento ainda: clique em Conectar'));
+	const texto = el('input', { class: 'entrada', value: 'oi, servidor', maxlength: 2000 });
+	const botoes = {};
+
+	function registrar(tipo, rotulo, detalhe) {
+		log.querySelector('.vazio-log')?.remove();
+		log.append(el('li', { class: `t-${tipo}` }, el('span', { class: 'hora' }, horaAgora()), el('span', { class: 'tipo' }, rotulo), el('span', { class: 'txt' }, detalhe)));
+		while (log.children.length > 200) log.firstChild.remove();
+		log.scrollTop = log.scrollHeight;
+	}
+
+	function atualizar() {
+		const estado = ws ? ws.readyState : 3;
+		estados.forEach((e, i) => e.classList.toggle('on', i === estado));
+		const aberta = estado === WebSocket.OPEN;
+		botoes.conectar.disabled = estado === WebSocket.OPEN || estado === WebSocket.CONNECTING;
+		for (const nome of ['eco', 'rajada', 'grande', 'fechar', 'servidor']) botoes[nome].disabled = !aberta;
+	}
+
+	function enviar(data) {
+		const frame = JSON.stringify({ event: 'eco', data });
+		ws.send(frame);
+		registrar('env', '↑ enviada', frame.length > 160 ? `${frame.slice(0, 160)}… (${frame.length} caracteres)` : frame);
+	}
+
+	function conectar() {
+		ws = new WebSocket(urlWs('/ws/laboratorio'));
+		registrar('info', 'new', `new WebSocket("${ws.url}")`);
+		atualizar();
+		ws.addEventListener('open', () => {
+			registrar('open', 'open', 'handshake concluído (101): conexão aberta');
+			atualizar();
+		});
+		ws.addEventListener('message', (e) => {
+			const resumo = e.data.length > 160 ? `${e.data.slice(0, 160)}… (${e.data.length} caracteres)` : e.data;
+			registrar('rec', '↓ recebida', resumo);
+		});
+		ws.addEventListener('error', () => registrar('error', 'error', 'algo deu errado (o navegador não conta o quê: veja o DevTools)'));
+		ws.addEventListener('close', (e) => {
+			registrar('close', 'close', `código ${e.code}${e.reason ? `, motivo "${e.reason}"` : ''}, wasClean = ${e.wasClean}`);
+			atualizar();
+		});
+	}
+
+	botoes.conectar = el('button', { class: 'botao', onclick: conectar }, 'Conectar');
+	botoes.eco = el('button', { class: 'botao sec', onclick: () => enviar(texto.value) }, 'Enviar');
+	botoes.rajada = el('button', { class: 'botao sec', onclick: () => Array.from({ length: 10 }, (_, i) => enviar(`mensagem ${i + 1} de 10`)) }, 'Mandar 10 seguidas');
+	botoes.grande = el('button', { class: 'botao sec', onclick: () => enviar('x'.repeat(300)) }, 'Mandar uma grande (300 bytes)');
+	botoes.fechar = el(
+		'button',
+		{
+			class: 'botao sec',
+			onclick: () => {
+				registrar('info', 'close()', 'ws.close(1000, "tchau")');
+				ws.close(1000, 'tchau');
+				atualizar();
+			},
+		},
+		'Eu fecho (1000)',
+	);
+	botoes.servidor = el(
+		'button',
+		{
+			class: 'botao perigo',
+			onclick: () => {
+				ws.send(JSON.stringify({ event: 'fechar' }));
+				registrar('env', '↑ enviada', '{"event":"fechar"}');
+			},
+		},
+		'Servidor fecha (4000)',
+	);
+
+	atualizar();
+	aoSair(() => ws?.close(1000, 'saiu da página'));
+
+	return el(
+		'div',
+		{ class: 'cartao' },
+		el('h3', {}, 'Laboratório', el('span', { class: 'qtd' }, 'conexão com /ws/laboratorio: o servidor devolve tudo o que recebe')),
+		el('div', { class: 'estados' }, estados.flatMap((e, i) => (i ? [el('span', { class: 'seta' }, '→'), e] : [e]))),
+		el('div', { class: 'linha-form' }, botoes.conectar, texto, botoes.eco),
+		el('div', { class: 'botoes' }, botoes.rajada, botoes.grande, botoes.fechar, botoes.servidor, el('button', { class: 'botao sec', onclick: () => log.replaceChildren() }, 'Limpar o log')),
+		log,
+	);
+}
+
+/* =====================================================================
+ * 5. A API do navegador
+ * ===================================================================== */
+const CODIGO_API = `const ws = new WebSocket('ws://localhost:3000/ws/laboratorio');
+
+ws.onopen = () => {
+  // Só dá para mandar depois do open. Texto ou bytes: quem
+  // decide o formato (aqui, JSON) é a aplicação.
+  ws.send(JSON.stringify({ event: 'eco', data: 'oi' }));
+};
+
+ws.onmessage = (e) => console.log('chegou', e.data);
+
+ws.onclose = (e) => console.log('fechou', e.code, e.reason);
+
+ws.onerror = () => console.log('deu erro');  // sem detalhes
+
+// mais tarde...
+ws.close(1000, 'tchau');`;
+
+const CODIGOS_CLOSE = [
+	['1000', 'normal', 'terminou o que tinha para fazer'],
+	['1001', 'indo embora', 'a aba fechou, ou o servidor está reiniciando'],
+	['1006', 'anormal', 'caiu sem frame de close. Nunca vai no fio: é o navegador avisando'],
+	['1008', 'violou a política', 'ex.: Origin não permitido, sem autenticação'],
+	['1009', 'grande demais', 'mensagem maior do que o servidor aceita'],
+	['1011', 'erro no servidor', 'algo inesperado do outro lado'],
+	['4000–4999', 'da aplicação', 'livres para o seu sistema. Aqui, 4000 = "o servidor encerrou"'],
+];
+
+function paginaApi(corpo) {
+	corpo.append(
+		cabecalho(
+			'No navegador',
+			'A API do navegador',
+			'new WebSocket()',
+			'Quatro eventos e dois métodos. O navegador cuida do handshake, dos frames, da máscara e do ping/pong. A página só vê mensagens inteiras chegando e saindo.',
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			codigo(CODIGO_API, { titulo: 'o mínimo para conversar' }),
+			el(
+				'div',
+				{ class: 'secao' },
+				nota('', 'O ciclo de vida (readyState)', [
+					'CONNECTING (0): o handshake está acontecendo. Um send() aqui dá erro.',
+					'OPEN (1): conexão aberta, os dois lados mandam quando quiserem.',
+					'CLOSING (2): alguém mandou o frame de close e espera o outro responder.',
+					'CLOSED (3): acabou. Não dá para reabrir: é preciso um new WebSocket().',
+				]),
+				nota('repare', 'O que a API não faz', [
+					'Não reconecta sozinha. O chat e o jogo têm um setTimeout que tenta de novo a cada 2 segundos.',
+					'Não manda ping. O servidor manda um ping a cada 15 s, o navegador responde pong sozinho, e o JavaScript nem fica sabendo.',
+					'Não explica erros: o onerror não traz o motivo. Para saber o que houve, só pelo DevTools.',
+				]),
+			),
+		),
+		laboratorio(),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			secao('Códigos de fechamento', 'Vão no frame de close, junto com um motivo em texto (até 123 bytes).', tabelaSimples(['código', 'nome', 'quando'], CODIGOS_CLOSE, ['mono nowrap', 'nowrap', ''])),
+			nota('dica', 'Experimente no laboratório', [
+				'"Eu fecho (1000)": o navegador manda close, o servidor responde close, wasClean = true.',
+				'"Servidor fecha (4000)": quem começa é o servidor, e o motivo chega no evento close.',
+				'Reinicie o backend (docker compose restart backend) com a conexão aberta: chega 1001, porque o servidor avisa que está saindo antes de desligar.',
+				'Desligue o wi-fi de um celular com o chat aberto: ninguém avisa nada. Em até 30 s (dois pings sem pong), o log do backend mostra a conexão derrubada com 1006.',
+			]),
+		),
+	);
+}
+
+/* =====================================================================
+ * 6. DevTools
+ * ===================================================================== */
+const CODIGO_CONSOLE = `// Cole no Console (F12 → Console):
+const url = location.origin.replace('http', 'ws');
+const ws = new WebSocket(url + '/ws/laboratorio');
+ws.onmessage = (e) => console.log('↓', e.data);
+ws.onopen = () => ws.send('{"event":"eco","data":"oi"}');
+
+// Depois, na mão:
+ws.send('{"event":"eco","data":{"turma":"oi"}}');
+ws.close(1000, 'tchau');`;
+
+function paginaDevtools(corpo) {
+	corpo.append(
+		cabecalho(
+			'No navegador',
+			'Vendo os frames no DevTools',
+			'aba Network',
+			'Os dois navegadores mostram o handshake e cada mensagem que passa na conexão, nos dois sentidos. Abra o DevTools agora, nesta página, e use o laboratório abaixo para gerar tráfego.',
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			cartao(
+				'Chrome / Edge',
+				el(
+					'ol',
+					{ class: 'passos' },
+					el('li', {}, el('kbd', {}, 'F12'), ' (ou ', el('kbd', {}, 'Ctrl'), ' + ', el('kbd', {}, 'Shift'), ' + ', el('kbd', {}, 'I'), ') e abra a aba ', el('b', {}, 'Network'), ' (Rede).'),
+					el('li', {}, 'Na barra de filtros, clique em ', el('b', {}, 'Socket'), ' (em versões mais antigas, ', el('b', {}, 'WS'), ').'),
+					el('li', {}, 'O DevTools só registra o que acontece com ele aberto. Clique em ', el('b', {}, 'Conectar'), ' no laboratório (ou recarregue a página).'),
+					el('li', {}, 'Clique na linha ', el('code', {}, 'laboratorio'), ' (status 101). Na aba ', el('b', {}, 'Headers'), ' está o handshake: Upgrade, Sec-WebSocket-Key e Sec-WebSocket-Accept.'),
+					el('li', {}, 'Na aba ', el('b', {}, 'Messages'), ': cada linha é um frame. ', el('span', { class: 'seta-env' }, '↑ verde'), ' = enviado pelo navegador, ', el('span', { class: 'seta-rec' }, '↓ vermelho'), ' = recebido. Clique numa linha para ver o JSON aberto.'),
+				),
+				el('p', { class: 'rodape-cartao' }, 'No topo da aba Messages dá para filtrar por texto e escolher só as enviadas ou só as recebidas. O Chrome não mostra os ping/pong.'),
+			),
+			cartao(
+				'Firefox',
+				el(
+					'ol',
+					{ class: 'passos' },
+					el('li', {}, el('kbd', {}, 'F12'), ' e abra a aba ', el('b', {}, 'Network'), ' (Rede).'),
+					el('li', {}, 'Filtre por ', el('b', {}, 'WS'), ' e conecte pelo laboratório.'),
+					el('li', {}, 'Clique na conexão (status 101) e abra a aba ', el('b', {}, 'Response'), ' (Resposta): a tabela com os frames, ', el('span', { class: 'seta-env' }, 'seta verde'), ' para enviados e ', el('span', { class: 'seta-rec' }, 'vermelha'), ' para recebidos.'),
+					el('li', {}, 'Clique com o botão direito no cabeçalho da tabela e ligue as colunas ', el('b', {}, 'OpCode'), ', ', el('b', {}, 'MaskBit'), ' e ', el('b', {}, 'FinBit'), '. Repare: MaskBit é true nas enviadas e false nas recebidas, exatamente como na tela do frame.'),
+					el('li', {}, 'No menu de filtros da tabela, ligue ', el('b', {}, 'Control Frames'), ' e espere uns 15 s: aparecem o ping do servidor (opcode 9) e o pong que o navegador devolveu (opcode 10).'),
+				),
+				el('p', { class: 'rodape-cartao' }, 'Para a parte de protocolo, o Firefox mostra mais: os bits do frame e os frames de controle.'),
+			),
+		),
+		laboratorio(),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			nota('dica', 'Pelo Console', 'Dá para abrir uma conexão na mão e ver os frames aparecerem na aba Network ao mesmo tempo.', codigo(CODIGO_CONSOLE, {})),
+			nota('', 'Mais fundo: os bytes de verdade (opcional)', [
+				'No Wireshark, com o filtro websocket, aparece cada frame com FIN, opcode, MASK, a chave e os dados desmascarados.',
+				'Com ws:// (sem TLS), como nesta aula, dá para ver tudo. Com wss://, o tráfego está cifrado, e só aparece TLS.',
+				'Também dá para ver os frames de chat e jogo: abra o DevTools na aba do /chat/ ou do /jogo/.',
+			]),
+		),
+	);
+}
+
+/* =====================================================================
+ * 7. No backend
+ * ===================================================================== */
+const CODIGO_GATEWAY = `// src/api/ws/chat/chat.gateway.ts (trecho)
+@WebSocketGateway({ path: '/ws/chat' })
+export class ChatGateway {
+  constructor(private readonly chatService: ChatService) {}
+
+  // Depois do handshake (o 101), a conexao esta aberta.
+  handleConnection(cliente: WebSocket) {
+    this.chatService.entrar(cliente);
+  }
+
+  // Fechou: close, aba fechada ou o heartbeat derrubou.
+  handleDisconnect(cliente: WebSocket) {
+    this.chatService.sair(cliente);
+  }
+
+  // Chega: {"event":"mensagem","data":{"autor":"Ana",...}}
+  @SubscribeMessage('mensagem')
+  mensagem(@MessageBody() data) {
+    const { autor, texto } = data ?? {};
+    this.chatService.publicar(autor, texto, 'websocket');
+  }
+}`;
+
+const CODIGO_SERVICE = `// src/api/ws/chat/chat.service.ts (trecho)
+// Quem esta com o chat aberto agora.
+private readonly clientes = new Set<WebSocket>();
+
+entrar(cliente: WebSocket) {
+  this.clientes.add(cliente);
+  const historico = this.chatRepository.findAll();
+  enviar(cliente, 'historico', historico);
+  const online = this.clientes.size;
+  transmitir(this.clientes, 'presenca', { online });
+}
+
+publicar(autor, texto, via) {
+  // ...validacoes: nome, vazia, tamanho...
+  const mensagem = this.chatRepository.create({
+    autor, texto, via,
+  });
+  transmitir(this.clientes, 'mensagem', mensagem);
+  return mensagem;
+}`;
+
+const CODIGO_TRANSMITIR = `// src/shared/ws/enviar.ts
+// O protocolo nao tem "mandar para todos": o servidor
+// manda o mesmo texto para cada conexao, uma por uma.
+export function transmitir(clientes, event, data) {
+  const texto = JSON.stringify({ event, data });
+
+  for (const cliente of clientes) {
+    if (cliente.readyState === WebSocket.OPEN) {
+      cliente.send(texto);
+    }
+  }
+}`;
+
+const CODIGO_CURL = `# De qualquer terminal, uma requisicao HTTP comum...
+curl -X POST http://IP-DO-SERVIDOR:3000/api/mensagens \\
+  -H 'Content-Type: application/json' \\
+  -d '{"autor":"terminal","texto":"oi do curl"}'
+# ...e a mensagem chega a todos pelo WebSocket.`;
+
+function diagramaFanout() {
+	const nomes = ['Ana', 'Bruno', 'Carla', 'Diego'];
+	let svg = '';
+	nomes.forEach((nome, i) => {
+		const y = 14 + i * 72;
+		const meio = y + 24;
+		svg += `<rect class="dg-caixa" x="6" y="${y}" width="124" height="48" rx="8"/><text class="dg-txt" x="68" y="${y + 22}" text-anchor="middle">${nome}</text><text class="dg-sub" x="68" y="${y + 39}" text-anchor="middle">navegador</text>`;
+		if (i === 0) svg += `<path class="dg-lig sobe" d="M130 ${meio - 8} C 230 ${meio - 8}, 250 120, 326 120"/>`;
+		svg += `<path class="dg-lig desce" d="M326 ${150 + i * 8} C 250 ${150 + i * 8}, 230 ${meio + 8}, 136 ${meio + 8}"/><path class="dg-ponta desce" d="M136 ${meio + 8} l9 -5 v10 z"/>`;
+	});
+	svg += `<text class="dg-rot sobe" x="150" y="20">↑ mensagem (da Ana)</text>`;
+	svg += `<text class="dg-rot desce" x="140" y="318">↓ para todos (até a Ana)</text>`;
+	svg += `<rect class="dg-caixa destaque" x="328" y="70" width="266" height="160" rx="10"/>`;
+	svg += `<text class="dg-txt" x="461" y="98" text-anchor="middle">backend</text>`;
+	svg += `<text class="dg-sub" x="461" y="128" text-anchor="middle">ChatGateway (porta de entrada)</text>`;
+	svg += `<text class="dg-sub" x="461" y="152" text-anchor="middle">↓</text>`;
+	svg += `<text class="dg-sub" x="461" y="176" text-anchor="middle">ChatService.publicar()</text>`;
+	svg += `<text class="dg-sub" x="461" y="204" text-anchor="middle">transmitir(clientes, ...)</text>`;
+	svg += `<path class="dg-lig cinza" d="M461 272 V 232"/><rect class="dg-caixa http" x="371" y="272" width="180" height="38" rx="8"/><text class="dg-sub" x="461" y="296" text-anchor="middle">POST /api/mensagens</text>`;
+	return el('div', { html: `<svg class="diagrama" viewBox="0 0 600 326" role="img" aria-label="Uma mensagem entra e sai para todos">${svg}</svg>` });
+}
+
+function paginaBackend(corpo) {
+	corpo.append(
+		cabecalho(
+			'No código',
+			'No backend: o gateway',
+			'NestJS + ws',
+			'É a mesma arquitetura do sistema de atendimento: o gateway faz o papel do controller, e as regras ficam no service. A diferença é que o gateway não responde a uma rota: ele trata eventos de conexões que ficam abertas.',
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			cartao('Uma mensagem entra, sai para todos', diagramaFanout()),
+			secao(
+				'Controller × Gateway',
+				null,
+				tabelaSimples(
+					['', 'Controller (HTTP)', 'Gateway (WebSocket)'],
+					[
+						['entra por', 'rota: POST /api/mensagens', 'evento: {"event":"mensagem"}'],
+						['vive', 'o tempo de uma requisição', 'enquanto a conexão estiver aberta'],
+						['o return', 'vira a resposta HTTP', 'vai só para quem mandou (ex.: {event:"voce"} no jogo)'],
+						['avisar os outros', 'impossível: ninguém perguntou', 'transmitir() para as conexões guardadas'],
+						['erro', 'status 400 com a mensagem', 'frame {"event":"exception", ...}'],
+					],
+					['nowrap', '', ''],
+				),
+			),
+		),
+		el('div', { class: 'grade-2' }, codigo(CODIGO_GATEWAY, { titulo: 'o gateway' }), codigo(CODIGO_SERVICE, { titulo: 'o service guarda as conexões' })),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			codigo(CODIGO_TRANSMITIR, { titulo: 'o broadcast' }),
+			el(
+				'div',
+				{ class: 'secao' },
+				nota('repare', 'As duas portas usam o mesmo service', 'O ChatService.publicar() é chamado pelo gateway e pelo controller HTTP. Uma mensagem que chega por POST sai para todos pelo WebSocket.', codigo(CODIGO_CURL, { linguagem: 'conf' })),
+				nota('dica', 'Olhe o log do backend', 'docker compose logs -f backend mostra cada conexão abrindo e fechando (com o código) e cada mensagem que chega (LOG_WS=true).'),
+			),
+		),
+	);
+}
+
+/* =====================================================================
+ * 8. O chat
+ * ===================================================================== */
+const EVENTOS_CHAT = [
+	['↑', 'mensagem', '{ autor, texto }', 'ao enviar'],
+	['↓', 'historico', '[ mensagens ]', 'logo que conecta, só para quem conectou'],
+	['↓', 'mensagem', '{ id, autor, texto, via, enviadaEm }', 'para todos, a cada mensagem nova'],
+	['↓', 'presenca', '{ online }', 'para todos, quando alguém entra ou sai'],
+	['↓', 'exception', '{ status, message }', 'só para quem mandou algo inválido (ex.: mensagem vazia)'],
+];
+
+function linhasEventos(eventos) {
+	return eventos.map(([dir, ev, dados, quando]) => [
+		el('span', { class: `dir ${dir === '↑' ? 'd-env' : 'd-rec'}` }, dir === '↑' ? '↑ navegador' : '↓ servidor'),
+		ev,
+		dados,
+		quando,
+	]);
+}
+
+function paginaChat(corpo) {
+	const endereco = `${location.origin}/chat/`;
+	corpo.append(
+		cabecalho(
+			'Os sistemas',
+			'O chat',
+			'broadcast',
+			'Todo mundo conectado em /ws/chat. Cada mensagem que chega no servidor sai para todas as conexões abertas.',
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			cartao('Abra no celular', el('div', { class: 'endereco' }, endereco), el('div', { class: 'botoes' }, el('a', { class: 'botao', href: '/chat/', target: '_blank' }, 'Abrir o chat ↗'))),
+			nota('dica', 'Para fazer com a turma', [
+				'Todos entram e mandam um "oi". Repare no contador de online subindo.',
+				'Com o DevTools aberto na aba do chat, cada mensagem de qualquer aluno aparece como ↓ recebida.',
+				'Reinicie o backend (docker compose restart backend): todos veem "reconectando…" e voltam sozinhos. O histórico some, porque está em memória.',
+			]),
+		),
+		secao('O protocolo da aplicação', 'O WebSocket só leva texto. O que vai dentro, nós combinamos: um JSON com event e data.', tabelaSimples(['sentido', 'event', 'data', 'quando'], linhasEventos(EVENTOS_CHAT), ['nowrap', 'mono nowrap', 'mono', ''])),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			nota('repare', 'Repare', [
+				'"historico" vai só para quem acabou de conectar. "mensagem" e "presenca" vão para todos.',
+				'Quem reconecta recebe o histórico de novo, e a tela é redesenhada a partir dele.',
+				'As mensagens enviadas por HTTP (curl) aparecem com o selo "via HTTP".',
+			]),
+			nota('', 'Para praticar', [
+				'Adicione o evento "digitando": o navegador avisa quando a pessoa começa a digitar, e o servidor repassa para os outros.',
+				'Limite a frequência: no máximo 5 mensagens por segundo por conexão. O que fazer com quem passar do limite?',
+			]),
+		),
+	);
+}
+
+/* =====================================================================
+ * 9. O jogo
+ * ===================================================================== */
+const EVENTOS_JOGO = [
+	['↓', 'estado', '{ jogadores: [{ id, nome, cor, x }] }', 'logo que conecta, e depois a cada tick (50 ms) em que algo mudou'],
+	['↑', 'entrar', '{ nome }', 'ao clicar em Entrar'],
+	['↓', 'voce', '{ id }', 'resposta do entrar, só para quem entrou'],
+	['↑', 'mover', '{ direcao: -1 | 0 | 1 }', 'só quando aperta ou solta a tecla, e não a cada passo'],
+	['↑', 'latencia', '{ t }', 'a cada 2 s, para medir a ida e volta'],
+	['↓', 'latencia', '{ t }', 'o servidor devolve o mesmo valor'],
+];
+
+function paginaJogo(corpo) {
+	const endereco = `${location.origin}/jogo/`;
+	const pista = el('div', { class: 'pista' }, el('div', { class: 'vazio-pista' }, 'conectando…'));
+	const porSegundo = contador('frames por segundo', 'bom');
+	const jogadores = contador('jogadores');
+	let frames = 0;
+
+	const ws = new WebSocket(urlWs('/ws/jogo'));
+	ws.addEventListener('message', (e) => {
+		const { event, data } = JSON.parse(e.data);
+		if (event !== 'estado') return;
+		frames++;
+		jogadores.valor.textContent = data.jogadores.length;
+		desenharPista(pista, data.jogadores);
+	});
+	ws.addEventListener('close', () => pista.replaceChildren(el('div', { class: 'vazio-pista' }, 'conexão fechada: recarregue a página')));
+	const timer = setInterval(() => {
+		porSegundo.valor.textContent = frames;
+		frames = 0;
+	}, 1000);
+	aoSair(() => {
+		clearInterval(timer);
+		ws.close(1000, 'saiu da página');
+	});
+
+	corpo.append(
+		cabecalho(
+			'Os sistemas',
+			'O jogo',
+			'o servidor manda no estado',
+			'Cada um controla um quadrado numa pista, com ← e →. O navegador só diz para onde quer ir. Quem move todo mundo, 20 vezes por segundo, é o servidor.',
+		),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			cartao('Abra no celular', el('div', { class: 'endereco' }, endereco), el('div', { class: 'botoes' }, el('a', { class: 'botao', href: '/jogo/', target: '_blank' }, 'Abrir o jogo ↗'))),
+			cartao(
+				'Ao vivo (esta tela só assiste: não entrou no jogo)',
+				pista,
+				el('div', { class: 'contadores' }, jogadores.no, porSegundo.no),
+				el('p', { class: 'rodape-cartao' }, 'Ninguém se mexendo: 0 frames por segundo. Alguém andando: 20, um por tick.'),
+			),
+		),
+		secao('O protocolo da aplicação', null, tabelaSimples(['sentido', 'event', 'data', 'quando'], linhasEventos(EVENTOS_JOGO), ['nowrap', 'mono nowrap', 'mono', ''])),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			nota('repare', 'Servidor autoritativo', [
+				'Se o navegador mandasse a posição ("estou no x = 40"), bastaria abrir o Console para teletransportar. Aqui ele só manda a intenção (-1, 0 ou 1), e o servidor decide quanto anda.',
+				'Tente trapacear pelo Console: mande {"event":"mover","data":{"direcao":50}}. O servidor usa só o sinal (Math.sign), e você anda na mesma velocidade de todo mundo.',
+				'O tick: a cada 50 ms o servidor move quem está andando e manda um único "estado" para todos. Com 40 jogadores, são 20 frames por segundo para cada um, e não um frame a cada tecla de cada aluno.',
+			]),
+			nota('dica', 'Latência', [
+				'O jogo mostra a latência embaixo da pista. Ela é medida pela própria aplicação: manda {"event":"latencia","data":{"t":...}} e espera o eco.',
+				'Não dá para usar o ping do protocolo: o navegador responde pong sozinho e não deixa o JavaScript mandar ping.',
+				'No DevTools (Throttling: Slow 4G), veja o quadrado demorar a responder: é a ida e volta até o servidor.',
+			]),
+		),
+	);
+}
+
+function desenharPista(pista, jogadores, meuId) {
+	if (!jogadores.length) {
+		pista.replaceChildren(el('div', { class: 'vazio-pista' }, 'ninguém jogando ainda'));
+		return;
+	}
+	pista.querySelector('.vazio-pista')?.remove();
+	const vistos = new Set();
+	for (const j of jogadores) {
+		vistos.add(String(j.id));
+		let no = pista.querySelector(`[data-id="${j.id}"]`);
+		if (!no) {
+			no = el('div', { class: 'jogador', 'data-id': j.id }, el('span', { class: 'nome' }), el('div', { class: 'corpo' }));
+			pista.append(no);
+		}
+		no.querySelector('.nome').textContent = j.id === meuId ? `${j.nome} (você)` : j.nome;
+		no.querySelector('.corpo').style.background = j.cor;
+		no.style.left = `${j.x}%`;
+	}
+	for (const no of pista.querySelectorAll('.jogador')) if (!vistos.has(no.dataset.id)) no.remove();
+}
+
+/* =====================================================================
+ * 10. Na vida real
+ * ===================================================================== */
+const COMPARACAO = [
+	['HTTP comum', 'navegador pergunta', 'abre e fecha (ou keep-alive)', 'quase tudo: páginas, APIs, formulários'],
+	['Polling', 'navegador pergunta de tempos em tempos', 'uma requisição por pergunta', 'dado que muda devagar, quando o atraso não importa (o selo do topo desta página!)'],
+	['Long polling', 'servidor segura a resposta até ter novidade', 'uma requisição por novidade', 'quando não dá para usar WebSocket nem SSE'],
+	['SSE', 'só o servidor fala, depois do pedido inicial', 'uma resposta HTTP que não termina', 'notificações, placar, feed ao vivo, resposta de IA saindo aos poucos'],
+	['WebSocket', 'os dois lados, quando quiserem', 'uma conexão TCP aberta', 'chat, jogo, edição colaborativa, cotação ao vivo'],
+];
+
+const CODIGO_NGINX = `location /ws/ {
+    proxy_pass http://backend:3000;
+    proxy_set_header Host $host;
+
+    # O Upgrade só existe no HTTP/1.1
+    proxy_http_version 1.1;
+
+    # Repassa o pedido de troca de protocolo,
+    # que o proxy descartaria
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    # O padrão (60 s) derruba conexão parada
+    proxy_read_timeout 1h;
+}`;
+
+function diagramaEscala() {
+	const svg = `
+		<rect class="dg-caixa" x="4" y="14" width="96" height="44" rx="8"/><text class="dg-txt" x="52" y="41" text-anchor="middle">Ana</text>
+		<rect class="dg-caixa" x="4" y="162" width="96" height="44" rx="8"/><text class="dg-txt" x="52" y="189" text-anchor="middle">Bruno</text>
+		<rect class="dg-caixa" x="132" y="86" width="132" height="48" rx="8"/><text class="dg-txt" x="198" y="107" text-anchor="middle">balanceador</text><text class="dg-sub" x="198" y="124" text-anchor="middle">Nginx, ALB</text>
+		<rect class="dg-caixa destaque" x="298" y="14" width="124" height="44" rx="8"/><text class="dg-txt" x="360" y="41" text-anchor="middle">backend 1</text>
+		<rect class="dg-caixa destaque" x="298" y="162" width="124" height="44" rx="8"/><text class="dg-txt" x="360" y="189" text-anchor="middle">backend 2</text>
+		<rect class="dg-caixa http" x="456" y="86" width="104" height="48" rx="8"/><text class="dg-txt" x="508" y="107" text-anchor="middle">Redis</text><text class="dg-sub" x="508" y="124" text-anchor="middle">pub/sub</text>
+		<path class="dg-lig ws" d="M100 36 C 120 36, 120 100, 132 104"/><path class="dg-lig ws" d="M100 184 C 120 184, 120 120, 132 116"/>
+		<path class="dg-lig ws" d="M264 104 C 284 100, 280 36, 298 36"/><path class="dg-lig ws" d="M264 116 C 284 120, 280 184, 298 184"/>
+		<path class="dg-lig cinza" d="M422 36 C 444 36, 440 100, 456 104"/><path class="dg-lig cinza" d="M422 184 C 444 184, 440 120, 456 116"/>`;
+	return el('div', { html: `<svg class="diagrama" viewBox="0 0 566 214" role="img" aria-label="Dois backends atrás de um balanceador">${svg}</svg>` });
+}
+
+function paginaVidaReal(corpo) {
+	corpo.append(
+		cabecalho(
+			'Na vida real',
+			'Quando usar, e o que muda em produção',
+			null,
+			'WebSocket resolve um problema específico: os dois lados precisam falar a qualquer momento. Para o resto, HTTP comum continua sendo a escolha mais simples.',
+		),
+		secao('Quem fala, e quando', null, tabelaSimples(['técnica', 'quem fala', 'conexão', 'bom para'], COMPARACAO, ['nowrap', '', '', ''])),
+		el(
+			'div',
+			{ class: 'grade-2' },
+			secao('Atrás de um proxy', 'Upgrade e Connection são cabeçalhos "de um salto só": o proxy não repassa sozinho. Sem estas linhas, o handshake não chega ao backend.', codigo(CODIGO_NGINX, { linguagem: 'conf', titulo: 'nginx.conf' })),
+			secao(
+				'Mais de um backend',
+				'O Set de conexões fica na memória de cada processo. Com dois backends, o broadcast de um não chega em quem está no outro.',
+				cartao(
+					null,
+					diagramaEscala(),
+					el('p', { class: 'rodape-cartao' }, 'A Ana está no backend 1 e o Bruno no 2. Sem nada entre eles, o backend 1 nem sabe que o Bruno existe. A saída comum: cada backend publica a mensagem num Redis (pub/sub), e todos repassam para as suas conexões.'),
+				),
+			),
+		),
+		el(
+			'div',
+			{ class: 'grade-3' },
+			nota('', 'Segurança', [
+				'Confira o Origin no handshake. Sem isso, qualquer site pode abrir um WebSocket para o seu servidor com o cookie do usuário (Cross-Site WebSocket Hijacking).',
+				'Autentique no handshake (cookie ou token) e recuse com 401 antes do 101.',
+				'Valide toda mensagem que chega, como no jogo. O Console do navegador manda qualquer coisa.',
+				'Em produção, sempre wss://.',
+			]),
+			nota('', 'Operação', [
+				'Cada conexão aberta ocupa memória e um descritor de arquivo no servidor, mesmo parada.',
+				'Deploy derruba todas as conexões (1001). O cliente precisa reconectar, de preferência com espera crescente, para não derrubar o servidor de novo.',
+				'Proxies e balanceadores fecham conexão parada: o heartbeat também serve para manter o fluxo.',
+			]),
+			nota('', 'E o Socket.IO?', [
+				'É uma biblioteca, não o protocolo. Traz salas, reconexão, confirmação de entrega e fallback para polling.',
+				'Usa um protocolo próprio por cima: no DevTools aparece algo como 42["mensagem",{...}].',
+				'Um new WebSocket() puro não conversa com um servidor Socket.IO: os dois lados precisam da biblioteca.',
+			]),
+		),
+		nota('repare', 'Para fechar', [
+			'HTTP: o navegador pergunta, o servidor responde. O servidor nunca começa.',
+			'WebSocket começa como HTTP (Upgrade → 101) e vira uma conexão aberta, em que os dois lados falam.',
+			'Depois do handshake, só passam frames: 2 a 14 bytes de cabeçalho, com opcode, tamanho e a máscara obrigatória do navegador.',
+			'O protocolo leva texto ou bytes. O formato das mensagens ({event, data}) é combinado pela aplicação.',
+			'O servidor guarda as conexões para fazer broadcast, valida tudo o que chega e derruba quem não responde ao ping.',
+		]),
+	);
 }
 
 /* =====================================================================
  * Roteiro (ordem da aula), menu e navegacao
  * ===================================================================== */
 const PAGINAS = [
-	{ rota: 'modelagem', grupo: 'Modelagem', menu: 'Diagrama e tabelas', render: paginaModelagem },
-	{ rota: 'relacoes/um-para-muitos', grupo: 'Relações', menu: '1:N  clientes → tickets', render: (c) => paginaRelacao('um-para-muitos', c) },
-	{ rota: 'relacoes/um-para-um', grupo: 'Relações', menu: '1:1  tickets → avaliacoes', render: (c) => paginaRelacao('um-para-um', c) },
-	{ rota: 'relacoes/muitos-para-muitos', grupo: 'Relações', menu: 'N:M  tickets ↔ tags', render: (c) => paginaRelacao('muitos-para-muitos', c) },
-	{ rota: 'constraints', grupo: 'Constraints', menu: 'Regras do banco', render: paginaConstraints },
-	...Object.entries(CONSULTAS).map(([chave, cfg]) => ({ rota: `consultas/${chave}`, grupo: 'Consultas', menu: cfg.titulo, render: (c) => paginaConsulta(chave, c) })),
-	{ rota: 'prisma', grupo: 'No código', menu: 'O mesmo dado pelo Prisma', render: paginaPrisma },
+	{ rota: 'problema', grupo: 'O problema', menu: 'HTTP só responde', render: paginaProblema },
+	{ rota: 'polling', grupo: 'O problema', menu: 'Polling × WebSocket', render: paginaPolling },
+	{ rota: 'handshake', grupo: 'O protocolo', menu: 'O handshake', render: paginaHandshake },
+	{ rota: 'frame', grupo: 'O protocolo', menu: 'O frame', render: paginaFrame },
+	{ rota: 'api', grupo: 'No navegador', menu: 'A API e o ciclo de vida', render: paginaApi },
+	{ rota: 'devtools', grupo: 'No navegador', menu: 'Vendo no DevTools', render: paginaDevtools },
+	{ rota: 'backend', grupo: 'No código', menu: 'O gateway no NestJS', render: paginaBackend },
+	{ rota: 'chat', grupo: 'Os sistemas', menu: 'O chat', render: paginaChat },
+	{ rota: 'jogo', grupo: 'Os sistemas', menu: 'O jogo', render: paginaJogo },
+	{ rota: 'vida-real', grupo: 'Na vida real', menu: 'Quando usar e produção', render: paginaVidaReal },
 ];
 
 function montarMenu() {
@@ -1648,23 +1838,20 @@ function rodape(i) {
 	);
 }
 
-let versaoRender = 0;
-async function navegar() {
+function navegar() {
+	limparPagina();
 	const i = indiceAtual();
 	const pagina = PAGINAS[i];
-	const versao = ++versaoRender;
 	document.querySelectorAll('#menu a').forEach((a) => a.classList.toggle('ativo', a.dataset.rota === pagina.rota));
 	document.querySelector('#menu a.ativo')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 
-	const conteudo = document.getElementById('conteudo');
 	const corpo = el('div', { class: 'pagina' });
 	try {
-		await pagina.render(corpo);
+		pagina.render(corpo);
 	} catch (erro) {
 		corpo.replaceChildren(caixaErro(erro));
 	}
-	if (versao !== versaoRender) return;
-	conteudo.replaceChildren(corpo, rodape(i));
+	document.getElementById('conteudo').replaceChildren(corpo, rodape(i));
 	window.scrollTo(0, 0);
 }
 
@@ -1674,19 +1861,20 @@ function irPara(passo) {
 }
 
 /* =====================================================================
- * Topo: estado do banco, tema e menu
+ * Topo: estado do backend, tema e menu
  * ===================================================================== */
-async function verificarBanco() {
+// De proposito, por polling: um numero que muda devagar e pode chegar atrasado.
+async function verificarBackend() {
 	const selo = document.getElementById('saude');
 	try {
-		const r = await fetch('/health-check').then((x) => x.json());
-		if (r.banco !== 'ok') throw new Error(r.motivo || 'banco indisponível');
+		const r = await api('/health-check');
+		const total = Object.values(r.conexoes).reduce((a, b) => a + b, 0);
 		selo.className = 'saude ok';
-		selo.textContent = `PostgreSQL ${r.versao.split(' ')[0]} · ${r.host}`;
-		selo.title = 'O backend está conectado ao banco';
+		selo.textContent = `backend ok · ${total} ${total === 1 ? 'conexão aberta' : 'conexões abertas'}`;
+		selo.title = Object.entries(r.conexoes).map(([canal, n]) => `${canal}: ${n}`).join('\n') + '\n(atualizado por polling, a cada 10 s)';
 	} catch (erro) {
 		selo.className = 'saude falha';
-		selo.textContent = 'banco indisponível';
+		selo.textContent = 'backend indisponível';
 		selo.title = erro.message;
 	}
 }
@@ -1737,8 +1925,8 @@ document.addEventListener('keydown', (ev) => {
 window.addEventListener('hashchange', navegar);
 montarMenu();
 navegar();
-verificarBanco();
-setInterval(verificarBanco, 60000);
+verificarBackend();
+setInterval(verificarBackend, 10000);
 </script>
 </body>
 </html>

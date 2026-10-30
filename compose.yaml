@@ -1,69 +1,25 @@
-# Tudo num servidor so:
-#   docker compose up -d --build
+# docker compose up -d --build
 #
-# Banco num servidor e backend em outro:
-#   no servidor do banco:   docker compose up -d banco
-#   no servidor do backend: DB_HOST=<ip privado do banco> docker compose up -d --build --no-deps backend
+# Um servico so: o backend serve a aula, o chat, o jogo e os WebSockets, tudo na porta 3000.
 
-# Nome fixo do projeto: o compose reconhece os containers e o volume mesmo que o
+# Nome fixo do projeto: o compose reconhece os containers mesmo que o
 # repositorio seja clonado numa pasta com outro nome.
 name: aula
 
 services:
-  banco:
-    image: postgres:18
-    container_name: banco
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${DB_USER:-app}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-aula123}
-      POSTGRES_DB: ${DB_NAME:-aula}
-    ports:
-      - "${BANCO_PORTA:-5432}:5432"
-    volumes:
-      # A partir do Postgres 18 o volume e montado em /var/lib/postgresql (nao mais em .../data).
-      - dados-banco:/var/lib/postgresql
-    healthcheck:
-      # -h 127.0.0.1: durante a inicializacao o Postgres so atende pelo socket local.
-      # Testando por TCP, o "pronto" so vem quando ele aceita conexao de fora.
-      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 3s
-      timeout: 3s
-      retries: 30
-
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
     container_name: backend
     restart: unless-stopped
-    depends_on:
-      banco:
-        condition: service_healthy
     ports:
       - "${PORTA:-3000}:3000"
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-app}:${DB_PASSWORD:-aula123}@${DB_HOST:-banco}:${DB_PORT:-5432}/${DB_NAME:-aula}
-      LOG_SQL: ${LOG_SQL:-true}
+      LOG_WS: ${LOG_WS:-true}
+      HEARTBEAT_MS: ${HEARTBEAT_MS:-15000}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health-check').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 5
-
-  # Interface web para o banco: substitui abrir a 5432 para fora.
-  # E uma tela de login para o banco, entao no Security Group libere a porta so para o seu IP.
-  adminer:
-    image: adminer:6.1.2
-    container_name: adminer-aula
-    restart: unless-stopped
-    depends_on:
-      - banco
-    ports:
-      - "${ADMINER_PORTA:-8081}:8080"
-    environment:
-      # Ja deixa "banco" preenchido no campo Servidor da tela de login.
-      ADMINER_DEFAULT_SERVER: banco
-
-volumes:
-  dados-banco:

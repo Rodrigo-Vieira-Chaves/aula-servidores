@@ -27,5 +27,5 @@
 			"@shared/*": ["./src/shared/*"]
 		}
 	},
-	"exclude": ["node_modules", "dist", "prisma.config.ts", "prisma"]
+	"exclude": ["node_modules", "dist"]
 }
